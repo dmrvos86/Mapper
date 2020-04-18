@@ -129,14 +129,20 @@ class Mapper {
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, lastCreatedObject) => {
                 if (step.isLastStep) { //if element value should be mapped
-                    lastCreatedObject[step.propertyName] = this.getValueByMapAttribute(containerElement, mapAttribute);
+                    var elementValue = this.getValueByMapAttribute(containerElement, mapAttribute);
+                    if (Array.isArray(elementValue) && !step.mapAsArray) {
+                        lastCreatedObject[step.propertyName] = elementValue[0];
+                    }
+                    else {
+                        lastCreatedObject[step.propertyName] = elementValue;
+                    }
                 }
                 else {
                     lastCreatedObject[step.propertyName] = lastCreatedObject[step.propertyName] || step.defaultPropertyValue;
                     return lastCreatedObject[step.propertyName];
                 }
             },
-            "ARRAY_ITEM": (mapAttribute, step, lastCreatedObject) => {
+            "ARRAY_ITEM": (_, step, lastCreatedObject) => {
                 //key-value search
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filteredArray = lastCreatedObject.filter(x => x[step.matchKey] == step.matchValue);
@@ -156,7 +162,7 @@ class Mapper {
                 }
                 // element value should be mapped
                 else {
-                    lastCreatedObject.push(this.getValueByMapAttribute(containerElement, mapAttribute));
+                    throw "Sholdn't be here";
                 }
             }
         };
@@ -164,7 +170,7 @@ class Mapper {
             console.log(script);
             let lastCreatedObject = [mappedObject];
             script.steps.forEach(step => {
-                console.log(step);
+                console.log(mappedObject);
                 lastCreatedObject = [scriptFunctions[step.type](script.mapAttribute, step, lastCreatedObject[0])];
             });
         });
@@ -253,6 +259,7 @@ class Mapper {
                 "propertyName": propertyName,
                 "mapType": "PROPERTY",
                 "isLastSegment": isLastSegment,
+                "mapAsArray": isSimpleArrayMap,
                 "matchKey": undefined,
                 "matchValue": undefined,
                 "matchIndex": undefined
@@ -284,6 +291,7 @@ class Mapper {
                 case "PROPERTY":
                     const stepData = {
                         "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": {}
@@ -293,6 +301,7 @@ class Mapper {
                 case "ARRAY":
                     steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
@@ -301,6 +310,7 @@ class Mapper {
                 case "ARRAY_SEARCH_BY_KEY":
                     steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
@@ -309,6 +319,7 @@ class Mapper {
                     propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
                     steps.push({
                         "type": "ARRAY_ITEM",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "matchKey": segmentInfo.matchKey,
                         "matchValue": segmentInfo.matchValue,
@@ -318,12 +329,14 @@ class Mapper {
                 case "ARRAY_SEARCH_BY_INDEX":
                     steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
                     });
                     steps.push({
                         "type": "ARRAY_ITEM",
+                        "mapAsArray": segmentInfo.mapAsArray,
                         "isLastStep": segmentInfo.isLastSegment,
                         "matchIndex": segmentInfo.matchIndex,
                         "defaultPropertyValue": {}

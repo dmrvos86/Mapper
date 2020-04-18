@@ -1,3 +1,11 @@
+body{
+    background-color: rgba(0,0,0,.025)!important;
+}
+
+.container{
+    background-color: white;
+}
+
 .form-control{
     margin: 10px;
 }
@@ -51,7 +59,7 @@ table.matrix tr:first-child{
 table.matrix tr td:first-child{
     font-weight: 500;
     padding: 5px;
-    width: 80px;
+    width: 120px;
     text-align: right;
     background-color: rgba(0,0,0,.1);
 }

@@ -138,7 +138,7 @@
                 <div class="col-lg-12">
                     <div class="card">
                         <div class="card-header">
-                            Example 4 -  complex array mapping - finding array element by key and value
+                            Example 4 -  complex array mapping
                         </div>
                         <div class="card-body example">
                             <div class="example-left">
@@ -150,30 +150,52 @@
                                     <table class="matrix">
                                         <tr>
                                             <td></td>
+                                            <td>Department 1</td>
+                                            <td>Department 2</td>
+                                            <td>Department 3</td>
+                                        </tr>
+                                        <tr>
                                             <td>User 1</td>
-                                            <td>User 2</td>
-                                            <td>User 3</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Role 1</td>
-                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=1].userId" /></td>
-                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=1].userId" /></td>
-                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=1].userId" /></td>
+                                            <td><input type="radio" name="user1" checked value="dep-A" map="rolesAsJsonMap[userId=1].department" /></td>
+                                            <td><input type="radio" name="user1" value="dep-B" map="rolesAsJsonMap[userId=1].department" /></td>
+                                            <td><input type="radio" name="user1" value="dep-C" map="rolesAsJsonMap[userId=1].department" /></td>
                                         </tr><tr>
-                                            <td>Role 2</td>
-                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=2].userId" /></td>
-                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=2].userId" /></td>
-                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=2].userId" /></td>
+                                            <td>User 2</td>
+                                            <td><input type="radio" name="user2" checked value="dep-A" map="rolesAsJsonMap[userId=2].department" /></td>
+                                            <td><input type="radio" name="user2" value="dep-B" map="rolesAsJsonMap[userId=2].department" /></td>
+                                            <td><input type="radio" name="user2" value="dep-C" map="rolesAsJsonMap[userId=2].department" /></td>
                                         </tr>
                                         </tr>
                                         <tr>
-                                            <td>Role 3</td>
-                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=3].userId" /></td>
-                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=3].userId" /></td>
-                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=3].userId" /></td>
+                                            <td>User 3</td>
+                                            <td><input type="radio" name="user3" checked value="dep-A" map="rolesAsJsonMap[userId=3].department" /></td>
+                                            <td><input type="radio" name="user3" value="dep-B" map="rolesAsJsonMap[userId=3].department" /></td>
+                                            <td><input type="radio" name="user3" value="dep-C" map="rolesAsJsonMap[userId=3].department" /></td>
                                         </tr>
                                     </table>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample4" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample4Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample4Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 5 -  complex array mapping
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample5">
                                     <p style="text-align: justify;margin-top: 30px;">
                                         Each input element in first row has map property in <code>map="rolesAsJsonMap[roleId=1].userId[]"</code> form. This will add
                                         input value (if checked) to element which matches <code>role=1</code> condition.
@@ -207,11 +229,11 @@
                                 </form>
                             </div>
                             <div class="example-right">
-                                <textarea class="form-control" id="txtExample4" style="height: 90%;"></textarea>
+                                <textarea class="form-control" id="txtExample5" style="height: 90%;"></textarea>
                             </div>
                             <div class="example-actions">
-                                <button type="button" class="btn btn-primary" id="btnExample4Get"> Get </button>
-                                <button type="button" class="btn btn-secondary" id="btnExample4Set"> Set </button>
+                                <button type="button" class="btn btn-primary" id="btnExample5Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample5Set"> Set </button>
                             </div>
                         </div>
                     </div>
@@ -222,11 +244,11 @@
                 <div class="col-lg-12">
                     <div class="card">
                         <div class="card-header">
-                            Example 5 -  complex array mapping - finding array element by index
+                            Example 6 -  complex array mapping - finding array element by index
                         </div>
                         <div class="card-body example">
                             <div class="example-left">
-                                <form id="formExample5">
+                                <form id="formExample6">
                                     <p style="text-align: justify;">
                                         Mapping elements by array index in case finding elements by key is not possible
                                     </p>
@@ -243,11 +265,11 @@
                                 </form>
                             </div>
                             <div class="example-right">
-                                <textarea class="form-control" id="txtExample5" style="height: 90%;"></textarea>
+                                <textarea class="form-control" id="txtExample6" style="height: 90%;"></textarea>
                             </div>
                             <div class="example-actions">
-                                <button type="button" class="btn btn-primary" id="btnExample5Get"> Get </button>
-                                <button type="button" class="btn btn-secondary" id="btnExample5Set"> Set </button>
+                                <button type="button" class="btn btn-primary" id="btnExample6Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample6Set"> Set </button>
                             </div>
                         </div>
                     </div>

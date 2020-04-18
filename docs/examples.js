@@ -27,7 +27,51 @@ const example3Data = {
     ]
   }
 
+const example4Data = {
+  "rolesAsJsonMap": [
+    {
+      "userId": "1",
+      "department": "dep-A"
+    },
+    {
+      "userId": "2",
+      "department": "dep-B"
+    },
+    {
+      "userId": "3",
+      "department": "dep-C"
+    }
+  ]
+}
+
 const example5Data = {
+  "rolesAsArray": [
+    {
+      "roleId": "1",
+      "userIds": [
+        "user1"
+      ]
+    },
+    {
+      "roleId": "2",
+      "userIds": [
+        "user1",
+        "user2",
+        "user3"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "roleId": "3",
+      "userIds": [
+        "user2"
+      ]
+    }
+  ]
+}
+
+const example6Data = {
     "contacts": [
       {
         "phone": "xxx-yyyy-zzz"

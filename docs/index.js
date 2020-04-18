@@ -32,5 +32,6 @@ function runExample(exampleNumber, data){
 runExample(1, example1Data);
 runExample(2, example2Data);
 runExample(3, example3Data);
-runExample(4, {});
+runExample(4, example4Data);
 runExample(5, example5Data);
+runExample(6, example6Data);
