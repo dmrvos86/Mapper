@@ -63,7 +63,7 @@ HTML
     <input type="number" map="userData.age" value="42" />
 
     <input type="checkbox" value="role1" map="contactData.userRoles[]" />
-    <input type="checkbox" value="role1" map="contactData.userRoles[]" />
+    <input type="checkbox" value="role2" map="contactData.userRoles[]" />
 
     <input type="text" map="contactData.phone[0]" value="zzz-xxx1" />
     <input type="text" map="contactData.phone[1]" value="zzz-xxx2" />
