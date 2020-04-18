@@ -26,3 +26,14 @@ const example3Data = {
       "data-processing"
     ]
   }
+
+const example5Data = {
+    "contacts": [
+      {
+        "phone": "xxx-yyyy-zzz"
+      },
+      {
+        "phone": "xxx-yyyy-sss-zzz"
+      }
+    ]
+  }
