@@ -1,0 +1,7 @@
+{
+    "name": "@dmrvos/mapper",
+    "author": "Drazen Mrvos",
+    "version": "0.0.1",
+    "main": "./Mapper.js",
+    "types": "./Mapper.d.ts"
+}

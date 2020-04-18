@@ -1,0 +1,14 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "allowJs": false,
+        "alwaysStrict": true,
+        "noUnusedParameters": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "outDir": "../dist",
+        "outFile": "../dist/mapper.js",
+        "lib": ["ES6", "DOM"],
+        "target": "ES2017"
+    }
+}

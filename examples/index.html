@@ -1,0 +1,264 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="index.css">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 1 - simple mapping
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample1">
+                                    <div class="form-group">
+                                        <label for="firstName">First name (<code>map="firstName"</code>)</label>
+                                        <input type="text" class="form-control" name="firstName" map="firstName" aria-describedby="firstName" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="lastName">Last name (<code>map="lastName")</code></label>
+                                        <input type="text" class="form-control" name="lastName" map="lastName" aria-describedby="lastName" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="age">Age (<code>map="age")</code></label>
+                                        <input type="number" class="form-control" name="age" map="age" aria-describedby="age" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="userType">User type (<code>map="userType"</code>)</label>
+                                        <select class="form-control" name="userType" map="userType" aria-describedby="userType">
+                                            <option>Reader</option>
+                                            <option>Admin</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample1" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample1Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample1Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 2 -  nested mapping
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample2">
+                                    <div class="form-group">
+                                        <label for="firstName">First name (<code>map="userData.firstName"</code>)</label>
+                                        <input type="text" class="form-control" name="firstName" map="userData.firstName" aria-describedby="firstName" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="lastName">Last name (<code>map="userData.lastName"</code>)</label>
+                                        <input type="text" class="form-control" name="lastName" map="userData.lastName" aria-describedby="lastName" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="userType">User type (<code>map="authData.userType"</code>)</label>
+                                        <select class="form-control" name="userType" map="authData.userType" aria-describedby="userType">
+                                            <option>Reader</option>
+                                            <option>Admin</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample2" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample2Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample2Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 3 -  simple array mapping
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample3">
+                                    <div class="form-group">
+                                        <label for="firstName">Username <code>map="username"</code></label>
+                                        <input type="text" class="form-control" name="firstName" map="userData.firstName" aria-describedby="firstName" />
+                                    </div>
+                                    
+                                    <label>Roles <code>map="roles[]"</code></label>
+                                    <div class="form-check">
+                                        <input type="checkbox" value="admin" name="role" map="roles[]" aria-describedby="role" />
+                                        <label class="form-check-label">Admin</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" value="pwruser" name="role" map="roles[]" aria-describedby="role" />
+                                        <label class="form-check-label">Poweruser</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" value="reader" name="role" map="roles[]" aria-describedby="role" />
+                                        <label class="form-check-label">Reader</label>
+                                    </div>
+                                    <br/>
+                                    <div class="form-group">
+                                        <label for="consents">Consents <code>map="consents[]"</code></label>
+                                        <select multiple class="form-control" name="consents" map="consents[]" aria-describedby="consents" style="width: 90%;">
+                                            <option value="email">Receive promo emails consent</option>
+                                            <option value="data-processing">Data processing consent</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample3" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample3Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample3Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 4 -  complex array mapping - finding array element by key and value
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample4">
+                                    <p style="text-align: justify;">
+                                        Each input element in first row has map property: <code>map="rolesAsJsonMap[roleId=1].userId"</code>. This will map
+                                        input value (if checked) to element which matches <code>role=1</code> condition. Other rows have different <code>roleId</code> set
+                                    </p>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td></td>
+                                            <td>User 1</td>
+                                            <td>User 2</td>
+                                            <td>User 3</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Role 1</td>
+                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=1].userId" /></td>
+                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=1].userId" /></td>
+                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=1].userId" /></td>
+                                        </tr><tr>
+                                            <td>Role 2</td>
+                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=2].userId" /></td>
+                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=2].userId" /></td>
+                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=2].userId" /></td>
+                                        </tr>
+                                        </tr>
+                                        <tr>
+                                            <td>Role 3</td>
+                                            <td><input type="checkbox" value="user1" map="rolesAsJsonMap[roleId=3].userId" /></td>
+                                            <td><input type="checkbox" value="user2" map="rolesAsJsonMap[roleId=3].userId" /></td>
+                                            <td><input type="checkbox" value="user3" map="rolesAsJsonMap[roleId=3].userId" /></td>
+                                        </tr>
+                                    </table>
+
+                                    <p style="text-align: justify;margin-top: 30px;">
+                                        Each input element in first row has map property in <code>map="rolesAsJsonMap[roleId=1].userId[]"</code> form. This will add
+                                        input value (if checked) to element which matches <code>role=1</code> condition.
+                                    </p>
+                                    <table class="matrix">
+                                        <tr>
+                                            <td></td>
+                                            <td>User 1</td>
+                                            <td>User 2</td>
+                                            <td>User 3</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Role 1</td>
+                                            <td><input type="checkbox" value="user1" map="rolesAsArray[roleId=1].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user2" map="rolesAsArray[roleId=1].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user3" map="rolesAsArray[roleId=1].userIds[]" /></td>
+                                        </tr><tr>
+                                            <td>Role 2</td>
+                                            <td><input type="checkbox" value="user1" map="rolesAsArray[roleId=2].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user2" map="rolesAsArray[roleId=2].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user3" map="rolesAsArray[roleId=2].userIds[]" /></td>
+                                        </tr>
+                                        </tr>
+                                        <tr>
+                                            <td>Role 3</td>
+                                            <td><input type="checkbox" value="user1" map="roles[roleId=3].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user2" map="roles[roleId=3].userIds[]" /></td>
+                                            <td><input type="checkbox" value="user3" map="roles[roleId=3].userIds[]" /></td>
+                                        </tr>
+                                    </table>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample4" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample4Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample4Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 5 -  complex array mapping - finding array element by index
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample5">
+                                    <p style="text-align: justify;">
+                                        Mapping elements by array index in case finding elements by key is not possible
+                                    </p>
+                                    
+                                    <div class="form-group">
+                                        <label for="phone1">Phone 1 (<code>map="userData.contacts[0].phone"</code>)</label>
+                                        <input type="text" class="form-control" name="phone1" map="contacts[0].phone" aria-describedby="phone1" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="phone2">Phone 2 (<code>map="userData.contacts[1].phone"</code>)</label>
+                                        <input type="text" class="form-control" name="phone2" map="contacts[1].phone" aria-describedby="phone2" />
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample5" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample5Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample5Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </body>
+
+    <script src="https://code.jquery.com/jquery-3.5.0.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="../dist/Mapper.js"></script>
+    <script type="text/javascript" src="examples.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+</html>

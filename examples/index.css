@@ -1,0 +1,57 @@
+.form-control{
+    margin: 10px;
+}
+
+.form-control input{
+    max-width: 200px;
+}
+
+.form-control{
+    max-width: 95%;
+}
+
+div.card{
+    margin-top: 20px;
+}
+
+div.card-body.example{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+div.card-body > div.example-left,
+div.card-body > div.example-right{
+    flex: 50%;
+    padding: 10px;
+}
+
+div.card-body > .example-actions{
+    flex: 100%;
+    text-align: center;
+}
+
+div.card-body > .example-actions button{
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 70px;
+}
+
+table.matrix{
+    width: 100%;
+    text-align: center;
+    margin-top: 20px;
+    background-color: rgba(0,0,0,.025);
+}
+
+table.matrix tr:first-child{
+    font-weight: 500;
+    background-color: rgba(0,0,0,.1);
+}
+
+table.matrix tr td:first-child{
+    font-weight: 500;
+    padding: 5px;
+    width: 80px;
+    text-align: right;
+    background-color: rgba(0,0,0,.1);
+}
