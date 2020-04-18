@@ -14,3 +14,15 @@ const example2Data = {
         "userType": "Admin"
     } 
 }
+
+const example3Data = {
+    "userData": {
+      "username": "bob@bobville.bb"
+    },
+    "roles": [
+      "pwruser"
+    ],
+    "consents": [
+      "data-processing"
+    ]
+  }

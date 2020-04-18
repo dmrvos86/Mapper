@@ -1,20 +1,20 @@
 "use strict";
-class ElementValueParserGetResult {
+class MapAttributeValueGetResult {
     constructor() {
         this.parserMatched = false;
     }
     static ValueFoundResult(value) {
-        const result = new ElementValueParserGetResult();
+        const result = new MapAttributeValueGetResult();
         result.parserMatched = true;
         result.value = value;
         return result;
     }
 }
-class ElementValueParser {
+class MapAttributeValueParser {
     constructor() {
     }
     parseHtmlTextAreaValue(element) {
-        return ElementValueParserGetResult.ValueFoundResult(element.value);
+        return MapAttributeValueGetResult.ValueFoundResult(element.value);
     }
     parseHtmlSelectValue(element) {
         let returnValue;
@@ -25,7 +25,7 @@ class ElementValueParser {
         else {
             returnValue = selectedValues[0];
         }
-        return ElementValueParserGetResult.ValueFoundResult(returnValue);
+        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
     parseHtmlInputValue(containerElement, element) {
         let returnValue = element.value;
@@ -41,22 +41,23 @@ class ElementValueParser {
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = containerElement.querySelectorAll(querySelector);
+                console.log(elements);
                 const elementsChecked = Array
                     .from(elements)
-                    .filter(x => x.checked);
-            case "radio":
-                if (elementsChecked.length === 1)
-                    returnValue = elementsChecked[0].value;
-                else if (elementsChecked.length > 1)
-                    throw `For radio with mapping ${mapAttribute}, more than one selected value exists`;
-                break;
-            case "checkbox":
-                returnValue = elementsChecked.map(x => x.value);
+                    .filter(x => x.checked === true);
+                if (element.type === "radio") {
+                    if (elementsChecked.length === 1)
+                        returnValue = elementsChecked[0].value;
+                    else if (elementsChecked.length > 1)
+                        throw `For radio with mapping ${mapAttribute}, more than one selected value exists`;
+                }
+                if (element.type === "checkbox")
+                    returnValue = elementsChecked.map(x => x.value || true);
                 break;
             default:
                 break;
         }
-        return ElementValueParserGetResult.ValueFoundResult(returnValue);
+        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
     setHtmlInputValue(containerElement, element, valueToSet) {
         switch (element.type) {
@@ -65,9 +66,11 @@ class ElementValueParser {
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll(querySelector));
+                if (!Array.isArray(valueToSet))
+                    valueToSet = [valueToSet];
                 elements
                     .forEach(x => {
-                    x.checked = x.value === valueToSet;
+                    x.checked = valueToSet.indexOf(x.value) > -1;
                 });
                 break;
             default:
@@ -76,8 +79,17 @@ class ElementValueParser {
         }
         ;
     }
-    getValue(containerElement, element) {
-        let result = new ElementValueParserGetResult();
+    // unless these are radios and checkboxes, this should return single element
+    getElementsByMapAttribute(containerElement, mapAttribute) {
+        const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
+        return Array.from(elements);
+    }
+    getValue(containerElement, mapAttribute) {
+        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
+        // multiple radios and checkboxes with same map attribute are handled
+        // inside their parse functions. That's why we can take single element here
+        const element = elements[0];
+        let result = new MapAttributeValueGetResult();
         if (element instanceof HTMLInputElement) {
             result = this.parseHtmlInputValue(containerElement, element);
         }
@@ -89,7 +101,11 @@ class ElementValueParser {
         }
         return result;
     }
-    setValue(containerElement, element, valueToSet) {
+    setValue(containerElement, mapAttribute, valueToSet) {
+        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
+        // multiple radios and checkboxes with same map attribute are handled
+        // inside their parse functions. That's why we can take single element here
+        const element = elements[0];
         if (element instanceof HTMLInputElement) {
             this.setHtmlInputValue(containerElement, element, valueToSet);
         }
@@ -101,26 +117,26 @@ class ElementValueParser {
 }
 /// <reference path="./parsers/default.ts" />
 class Mapper {
-    getElementValue(containerElement, element) {
-        return Mapper.elementValueParsers[0].getValue(containerElement, element).value;
+    getValueByMapAttribute(containerElement, mapAttribute) {
+        return Mapper.elementValueParsers[0].getValue(containerElement, mapAttribute).value;
     }
-    setElementValue(containerElement, element, valueToSet) {
-        return Mapper.elementValueParsers[0].setValue(containerElement, element, valueToSet);
+    setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
+        return Mapper.elementValueParsers[0].setValue(containerElement, mapAttribute, valueToSet);
     }
     getData(containerElement) {
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(containerElement);
         const scriptFunctions = {
-            "PROPERTY_TRAVERSE": (step, lastCreatedObject) => {
-                if (step.propertyValue) { //if element value should be mapped
-                    lastCreatedObject[step.propertyName] = this.getElementValue(containerElement, step.propertyValue);
+            "PROPERTY_TRAVERSE": (mapAttribute, step, lastCreatedObject) => {
+                if (step.isLastStep) { //if element value should be mapped
+                    lastCreatedObject[step.propertyName] = this.getValueByMapAttribute(containerElement, mapAttribute);
                 }
                 else {
                     lastCreatedObject[step.propertyName] = lastCreatedObject[step.propertyName] || step.defaultPropertyValue;
                     return lastCreatedObject[step.propertyName];
                 }
             },
-            "ARRAY_ITEM": (step, lastCreatedObject) => {
+            "ARRAY_ITEM": (mapAttribute, step, lastCreatedObject) => {
                 //key-value search
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filteredArray = lastCreatedObject.filter(x => x[step.matchKey] == step.matchValue);
@@ -140,15 +156,16 @@ class Mapper {
                 }
                 // element value should be mapped
                 else {
-                    if (step.propertyValue)
-                        lastCreatedObject.push(this.getElementValue(containerElement, step.propertyValue));
+                    lastCreatedObject.push(this.getValueByMapAttribute(containerElement, mapAttribute));
                 }
             }
         };
         steps.forEach(script => {
+            console.log(script);
             let lastCreatedObject = [mappedObject];
             script.steps.forEach(step => {
-                lastCreatedObject = [scriptFunctions[step.type](step, lastCreatedObject[0])];
+                console.log(step);
+                lastCreatedObject = [scriptFunctions[step.type](script.mapAttribute, step, lastCreatedObject[0])];
             });
         });
         return mappedObject;
@@ -156,9 +173,9 @@ class Mapper {
     setData(containerElement, dataToMap) {
         const steps = this.buildMapProcedureStepsForAllElements(containerElement);
         const scriptFunctions = {
-            "PROPERTY_TRAVERSE": (element, step, currentPath) => {
-                if (step.propertyValue)
-                    this.setElementValue(containerElement, element, currentPath[step.propertyName]);
+            "PROPERTY_TRAVERSE": (mapAttribute, step, currentPath) => {
+                if (step.isLastStep)
+                    this.setValueByMapAttribute(containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof (Object)) //if element value should be mapped
                     return currentPath[step.propertyName];
                 else
@@ -178,8 +195,8 @@ class Mapper {
                 }
                 // element value should be mapped
                 else {
-                    if (step.propertyValue)
-                        console.log("Should check later ... radios, checkboxes, ...");
+                    if (step.isLastStep)
+                        throw "Should not be here";
                 }
             }
         };
@@ -187,7 +204,7 @@ class Mapper {
             let currentPathSegment = [dataToMap];
             script.steps.forEach(step => {
                 if (currentPathSegment[0] !== undefined)
-                    currentPathSegment = [scriptFunctions[step.type](script.element, step, currentPathSegment[0])];
+                    currentPathSegment = [scriptFunctions[step.type](script.mapAttribute, step, currentPathSegment[0])];
             });
         });
     }
@@ -210,20 +227,23 @@ class Mapper {
         return elementsWithMapAttribute;
     }
     buildMapProcedureStepsForAllElements(containerElement) {
-        const steps = this.parseElements(containerElement).map(x => {
+        const mapingsParsed = [];
+        const allMapAttributes = this
+            .parseElements(containerElement)
+            .map(x => x.getAttribute("map"));
+        const uniqueMapAttributes = [...new Set(allMapAttributes)];
+        return uniqueMapAttributes.map(x => {
             return this.buildMapProcedureStepsForSingleElement(x);
         });
-        return steps;
     }
-    buildMapProcedureStepsForSingleElement(el) {
-        const mapProp = el.getAttribute("map");
-        const mapPath = mapProp.split(".");
+    buildMapProcedureStepsForSingleElement(mapProperty) {
+        const mapPath = mapProperty.split(".");
         const steps = [];
         const getSegmentPathInfo = function (pathSegment, index) {
             const isLastSegment = index === (mapPath.length - 1);
             const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
             if (isErrorMap)
-                throw "Invalid mapping: " + mapProp + ", segment: " + pathSegment;
+                throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
             const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
             const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
             let propertyName = pathSegment;
@@ -264,30 +284,24 @@ class Mapper {
                 case "PROPERTY":
                     const stepData = {
                         "type": "PROPERTY_TRAVERSE",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": {}
                     };
-                    if (segmentInfo.isLastSegment) {
-                        stepData.propertyValue = el;
-                    }
                     steps.push(stepData);
                     break;
                 case "ARRAY":
-                    const stepData1 = {
+                    steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
-                    };
-                    const stepData2 = {
-                        "type": "ARRAY_ITEM",
-                        "propertyValue": el
-                    };
-                    steps.push(stepData1);
-                    steps.push(stepData2);
+                    });
                     break;
                 case "ARRAY_SEARCH_BY_KEY":
                     steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
                     });
@@ -295,6 +309,7 @@ class Mapper {
                     propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
                     steps.push({
                         "type": "ARRAY_ITEM",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "matchKey": segmentInfo.matchKey,
                         "matchValue": segmentInfo.matchValue,
                         "defaultPropertyValue": propertyValue
@@ -303,11 +318,13 @@ class Mapper {
                 case "ARRAY_SEARCH_BY_INDEX":
                     steps.push({
                         "type": "PROPERTY_TRAVERSE",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
                     });
                     steps.push({
                         "type": "ARRAY_ITEM",
+                        "isLastStep": segmentInfo.isLastSegment,
                         "matchIndex": segmentInfo.matchIndex,
                         "defaultPropertyValue": {}
                     });
@@ -315,9 +332,9 @@ class Mapper {
             }
         });
         return {
-            element: el,
+            mapAttribute: mapProperty,
             steps: steps
         };
     }
 }
-Mapper.elementValueParsers = [new ElementValueParser()];
+Mapper.elementValueParsers = [new MapAttributeValueParser()];

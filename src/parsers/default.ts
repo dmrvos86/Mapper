@@ -1,9 +1,9 @@
-class ElementValueParserGetResult{
+class MapAttributeValueGetResult{
     public parserMatched = false; 
     public value: any;
 
-    public static ValueFoundResult(value: any): ElementValueParserGetResult{
-        const result = new ElementValueParserGetResult();
+    public static ValueFoundResult(value: any): MapAttributeValueGetResult{
+        const result = new MapAttributeValueGetResult();
         result.parserMatched = true;
         result.value = value;
 
@@ -13,16 +13,16 @@ class ElementValueParserGetResult{
     constructor(){}
 }
 
-class ElementValueParser{
+class MapAttributeValueParser{
     constructor(){
 
     } 
 
-    private parseHtmlTextAreaValue(element: HTMLTextAreaElement): ElementValueParserGetResult{
-        return ElementValueParserGetResult.ValueFoundResult(element.value);
+    private parseHtmlTextAreaValue(element: HTMLTextAreaElement): MapAttributeValueGetResult{
+        return MapAttributeValueGetResult.ValueFoundResult(element.value);
     }
 
-    private parseHtmlSelectValue(element: HTMLSelectElement): ElementValueParserGetResult{
+    private parseHtmlSelectValue(element: HTMLSelectElement): MapAttributeValueGetResult{
         let returnValue;
         const selectedValues = Array.from(element.selectedOptions).map(x => x.value || x.text);
 
@@ -33,11 +33,12 @@ class ElementValueParser{
             returnValue = selectedValues[0];
         }
 
-        return ElementValueParserGetResult.ValueFoundResult(returnValue);
+        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
-    private parseHtmlInputValue(containerElement: HTMLElement, element: HTMLInputElement): ElementValueParserGetResult{
+    private parseHtmlInputValue(containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult{
         let returnValue = element.value as any;
+
         switch(element.type){
             case "number":
                 returnValue = returnValue * 1; //fastest way to convert
@@ -52,20 +53,22 @@ class ElementValueParser{
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = containerElement.querySelectorAll<HTMLInputElement>(querySelector);
 
+                console.log(elements);
+
                 const elementsChecked = Array
                     .from(elements)
-                    .filter(x => x.checked);
+                    .filter(x => x.checked === true);
 
-            case "radio":
-                if (elementsChecked.length === 1)
-                    returnValue = elementsChecked[0].value;
-                else if (elementsChecked.length > 1)
-                    throw `For radio with mapping ${mapAttribute}, more than one selected value exists`
+                if (element.type === "radio"){
+                    if (elementsChecked.length === 1)
+                        returnValue = elementsChecked[0].value;
+                    else if (elementsChecked.length > 1)
+                        throw `For radio with mapping ${mapAttribute}, more than one selected value exists`
+                }
 
-                break;
+                if (element.type === "checkbox")
+                    returnValue = elementsChecked.map(x => x.value || true);
 
-            case "checkbox":
-                returnValue = elementsChecked.map(x => x.value);
                 break;
 
             default:
@@ -73,7 +76,7 @@ class ElementValueParser{
 
         }
 
-        return ElementValueParserGetResult.ValueFoundResult(returnValue);
+        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
     private setHtmlInputValue(containerElement: HTMLElement, element: HTMLInputElement, valueToSet: any): void{
@@ -84,9 +87,12 @@ class ElementValueParser{
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll<HTMLInputElement>(querySelector));
 
+                if (!Array.isArray(valueToSet))
+                    valueToSet = [valueToSet];
+
                 elements
                     .forEach(x => {
-                        x.checked = x.value === valueToSet;
+                        x.checked = valueToSet.indexOf(x.value) > -1;
                     });
 
                 break;
@@ -98,8 +104,19 @@ class ElementValueParser{
         };
     }
 
-    public getValue (containerElement: HTMLElement, element: HTMLElement): ElementValueParserGetResult{
-        let result = new ElementValueParserGetResult();
+    // unless these are radios and checkboxes, this should return single element
+    protected getElementsByMapAttribute(containerElement: HTMLElement, mapAttribute: string){
+        const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
+        return Array.from(elements);
+    }
+
+    public getValue (containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult{
+        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
+
+        // multiple radios and checkboxes with same map attribute are handled
+        // inside their parse functions. That's why we can take single element here
+        const element = elements[0];
+        let result = new MapAttributeValueGetResult();
 
         if (element instanceof HTMLInputElement){
             result = this.parseHtmlInputValue(containerElement, element);
@@ -114,7 +131,13 @@ class ElementValueParser{
         return result;
     }
     
-    public setValue (containerElement: HTMLElement, element: HTMLElement, valueToSet: any): boolean {
+    public setValue (containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
+        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
+
+        // multiple radios and checkboxes with same map attribute are handled
+        // inside their parse functions. That's why we can take single element here
+        const element = elements[0];
+
         if (element instanceof HTMLInputElement){
             this.setHtmlInputValue(containerElement, element, valueToSet);
         }
