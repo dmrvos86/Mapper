@@ -1,0 +1,2 @@
+# Mapper
+Simple JavaScript mapper
