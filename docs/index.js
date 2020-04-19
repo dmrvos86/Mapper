@@ -7,17 +7,17 @@ function runExample(exampleNumber, data){
     const btnSet = document.getElementById(`btnExample${exampleNumber}Set`);
     
     btnGet.addEventListener("click", () => { 
-        txt.value = JSON.stringify(mapper.getData(form), null, 2)  
+        txt.value = JSON.stringify(Mapper.getData(form), null, 2)  
     })
 
     btnSet.addEventListener("click", () => { 
-        mapper.setData(form, JSON.parse(txt.value))
+        Mapper.setData(form, JSON.parse(txt.value))
     })
 
     //Test example mapping
     try{
-        mapper.setData(form, data);
-        const mappedData = mapper.getData(form);
+        Mapper.setData(form, data);
+        const mappedData = Mapper.getData(form);
 
         if(!_.isEqual(data, mappedData)){
             form.style.border = "1px solid red"

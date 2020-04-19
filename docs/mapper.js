@@ -13,12 +13,31 @@ class MapAttributeValueGetResult {
 class MapAttributeValueParser {
     constructor() {
     }
-    parseHtmlTextAreaValue(element) {
-        return MapAttributeValueGetResult.ValueFoundResult(element.value);
+    getElementValueOrDataValueAttribute(mapperConfig, el) {
+        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+            return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
+        return el.value;
     }
-    parseHtmlSelectValue(element) {
+    setElementValueOrDataValueAttribute(mapperConfig, el, valueToSet) {
+        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+            el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
+        else
+            el.value = valueToSet;
+    }
+    parseHtmlTextAreaValue(mapperConfig, element) {
+        const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+        return MapAttributeValueGetResult.ValueFoundResult(value);
+    }
+    parseHtmlSelectValue(mapperConfig, element) {
         let returnValue;
-        const selectedValues = Array.from(element.selectedOptions).map(x => x.value || x.text);
+        const selectedValues = Array
+            .from(element.selectedOptions)
+            .map(x => {
+            let value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+            if (value === null || value === undefined)
+                value = x.text;
+            return value;
+        });
         if (element.multiple) {
             returnValue = selectedValues;
         }
@@ -27,8 +46,8 @@ class MapAttributeValueParser {
         }
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
-    parseHtmlInputValue(containerElement, element) {
-        let returnValue = element.value;
+    parseHtmlInputValue(mapperConfig, containerElement, element) {
+        let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element);
         switch (element.type) {
             case "number":
                 returnValue = returnValue * 1; //fastest way to convert
@@ -41,7 +60,6 @@ class MapAttributeValueParser {
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = containerElement.querySelectorAll(querySelector);
-                console.log(elements);
                 const elementsChecked = Array
                     .from(elements)
                     .filter(x => x.checked === true);
@@ -59,7 +77,7 @@ class MapAttributeValueParser {
         }
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
-    setHtmlInputValue(containerElement, element, valueToSet) {
+    setHtmlInputValue(mapperConfig, containerElement, element, valueToSet) {
         switch (element.type) {
             case "checkbox":
             case "radio":
@@ -70,11 +88,12 @@ class MapAttributeValueParser {
                     valueToSet = [valueToSet];
                 elements
                     .forEach(x => {
-                    x.checked = valueToSet.indexOf(x.value) > -1;
+                    const elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                    x.checked = valueToSet.indexOf(elementValue) > -1;
                 });
                 break;
             default:
-                element.value = valueToSet;
+                this.setElementValueOrDataValueAttribute(mapperConfig, element, valueToSet);
                 break;
         }
         ;
@@ -84,30 +103,30 @@ class MapAttributeValueParser {
         const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
         return Array.from(elements);
     }
-    getValue(containerElement, mapAttribute) {
+    getValue(mapperConfig, containerElement, mapAttribute) {
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
         // multiple radios and checkboxes with same map attribute are handled
         // inside their parse functions. That's why we can take single element here
         const element = elements[0];
         let result = new MapAttributeValueGetResult();
         if (element instanceof HTMLInputElement) {
-            result = this.parseHtmlInputValue(containerElement, element);
+            result = this.parseHtmlInputValue(mapperConfig, containerElement, element);
         }
         else if (element instanceof HTMLSelectElement) {
-            result = this.parseHtmlSelectValue(element);
+            result = this.parseHtmlSelectValue(mapperConfig, element);
         }
         else if (element instanceof HTMLTextAreaElement) {
-            result = this.parseHtmlTextAreaValue(element);
+            result = this.parseHtmlTextAreaValue(mapperConfig, element);
         }
         return result;
     }
-    setValue(containerElement, mapAttribute, valueToSet) {
+    setValue(mapperConfig, containerElement, mapAttribute, valueToSet) {
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
         // multiple radios and checkboxes with same map attribute are handled
         // inside their parse functions. That's why we can take single element here
         const element = elements[0];
         if (element instanceof HTMLInputElement) {
-            this.setHtmlInputValue(containerElement, element, valueToSet);
+            this.setHtmlInputValue(mapperConfig, containerElement, element, valueToSet);
         }
         else {
             element.value = valueToSet;
@@ -117,19 +136,35 @@ class MapAttributeValueParser {
 }
 /// <reference path="./parsers/default.ts" />
 class Mapper {
+    constructor(containerElement, configuration) {
+        this.containerElement = containerElement;
+        this.configuration = {
+            /// alternative to using input value attribute. This is usefull for external libraries (select2, datepickers, ...)
+            /// as this attribute can contain formatted data which needs to be sent to API or used anywhere else
+            // example: input with datepicker will have value "March 3 2020" but we can set data-value to always contain
+            /// ISO date - 2020-03-03
+            /// If left empty - it won't be used
+            "dataValueAttributeToUseForGet": "data-value",
+            "dataValueAttributeToUseForSet": "data-value"
+        };
+        Object.assign(this.configuration, configuration || {});
+    }
     getValueByMapAttribute(containerElement, mapAttribute) {
-        return Mapper.elementValueParsers[0].getValue(containerElement, mapAttribute).value;
+        return Mapper.elementValueParsers[0].getValue(this.configuration, containerElement, mapAttribute).value;
     }
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
-        return Mapper.elementValueParsers[0].setValue(containerElement, mapAttribute, valueToSet);
+        return Mapper.elementValueParsers[0].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
-    getData(containerElement) {
+    static getData(containerElement) {
+        return new Mapper(containerElement).getData();
+    }
+    getData() {
         const mappedObject = {};
-        const steps = this.buildMapProcedureStepsForAllElements(containerElement);
+        const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, lastCreatedObject) => {
                 if (step.isLastStep) { //if element value should be mapped
-                    var elementValue = this.getValueByMapAttribute(containerElement, mapAttribute);
+                    var elementValue = this.getValueByMapAttribute(this.containerElement, mapAttribute);
                     if (Array.isArray(elementValue) && !step.mapAsArray) {
                         lastCreatedObject[step.propertyName] = elementValue[0];
                     }
@@ -167,21 +202,22 @@ class Mapper {
             }
         };
         steps.forEach(script => {
-            console.log(script);
             let lastCreatedObject = [mappedObject];
             script.steps.forEach(step => {
-                console.log(mappedObject);
                 lastCreatedObject = [scriptFunctions[step.type](script.mapAttribute, step, lastCreatedObject[0])];
             });
         });
         return mappedObject;
     }
-    setData(containerElement, dataToMap) {
-        const steps = this.buildMapProcedureStepsForAllElements(containerElement);
+    static setData(containerElement, dataToMap) {
+        return new Mapper(containerElement).setData(dataToMap);
+    }
+    setData(dataToMap) {
+        const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, currentPath) => {
                 if (step.isLastStep)
-                    this.setValueByMapAttribute(containerElement, mapAttribute, currentPath[step.propertyName]);
+                    this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof (Object)) //if element value should be mapped
                     return currentPath[step.propertyName];
                 else

@@ -18,13 +18,12 @@ interface MapAttributeSteps{
     "steps": MapStep[]
 }
 
-interface MapperConfiguration{
-    "dataValueAttributeToUseForGet": string;
-    "dataValueAttributeToUseForSet": string;
-}
-
 class Mapper{
     private static elementValueParsers: MapAttributeValueParser[] = [new MapAttributeValueParser()];
+
+    constructor(private containerElement: HTMLElement, configuration?: MapperConfiguration){
+        Object.assign(this.configuration, configuration || {});
+    }
 
     public configuration: MapperConfiguration = {
         /// alternative to using input value attribute. This is usefull for external libraries (select2, datepickers, ...)
@@ -44,14 +43,18 @@ class Mapper{
         return Mapper.elementValueParsers[0].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
 
-    public getData(containerElement: HTMLElement){
+    public static getData(containerElement: HTMLElement){
+        return new Mapper(containerElement).getData();
+    }
+
+    public getData(){
         const mappedObject = {};
-        const steps = this.buildMapProcedureStepsForAllElements(containerElement);
+        const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapStep, lastCreatedObject: any) => {
                 if (step.isLastStep){ //if element value should be mapped
-                    var elementValue = this.getValueByMapAttribute(containerElement, mapAttribute);
+                    var elementValue = this.getValueByMapAttribute(this.containerElement, mapAttribute);
 
                     if (Array.isArray(elementValue) && !step.mapAsArray){
                         lastCreatedObject[step.propertyName] = elementValue[0];
@@ -93,11 +96,9 @@ class Mapper{
         }
 
         steps.forEach(script => {
-            console.log(script);
             let lastCreatedObject: any[] = [mappedObject];
 
             script.steps.forEach(step => {
-                console.log(mappedObject);
                 lastCreatedObject = [scriptFunctions[step.type](script.mapAttribute, step, lastCreatedObject[0])];
             })
         })
@@ -105,13 +106,17 @@ class Mapper{
         return mappedObject;
     }
 
-    public setData(containerElement: HTMLElement, dataToMap: {}){
-        const steps = this.buildMapProcedureStepsForAllElements(containerElement);
+    public static setData(containerElement: HTMLElement, dataToMap: {}){
+        return new Mapper(containerElement).setData(dataToMap);
+    }
+
+    public setData(dataToMap: {}){
+        const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapStep, currentPath: any) => {
                 if (step.isLastStep)
-                    this.setValueByMapAttribute(containerElement, mapAttribute, currentPath[step.propertyName]);
+                    this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof(Object)) //if element value should be mapped
                     return currentPath[step.propertyName];
                 else

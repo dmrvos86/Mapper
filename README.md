@@ -13,12 +13,6 @@ to have my first public project on GitHub
 
 Before doing anythin, either compile Typescript files in `src` folder or include `mapper.js` found in `dist` folder. Mapper will soon be available on npm.
 
-To start mapping, create mapper instance:
-```javascript
-const mapper = new Mapper();
-```
-You can keep this instance as singleton or create new one each time.
-
 #### Basic example
 HTML
 ```html
@@ -30,9 +24,16 @@ HTML
 
 To get data from this form:
 ```javascript
-    const mapper = new Mapper();
+    // using Mapper instance for single container element
     const containerElement = document.getElementById("myForm");
-    const data = mapper.getData(containerElement);
+    const mapper = new Mapper(containerElement); //reusable instance
+    const data = mapper.getData();
+```
+or
+```javascript
+    // using Mapper static methods
+    const containerElement = document.getElementById("myForm");
+    const data = Mapper.getData(containerElement);
 ```
 `data` object will contain data found on elements with `map` attribute. Mapper works with any container element (`HtmlDivElement`, ...). Data returned would be:
 ```json

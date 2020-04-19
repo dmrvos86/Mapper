@@ -76,8 +76,6 @@ class MapAttributeValueParser{
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = containerElement.querySelectorAll<HTMLInputElement>(querySelector);
 
-                console.log(elements);
-
                 const elementsChecked = Array
                     .from(elements)
                     .filter(x => x.checked === true);
