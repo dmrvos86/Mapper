@@ -81,7 +81,7 @@ HTML
 - `map="contactData.phone[1]"` in array at `contactData.phone`, add value at index 1
 - `map="claims[claimType=role].value"` in array assigned to property `claims`, find object with key `claimType` equal to string `role`. In matching object (create it if it doesn't exist), assign value to property `value`
 
-#### When getting data
+#### When setting data
 
 Procedure is same as above, just instead of assigning values to object - values are assigned to DomElements.
 

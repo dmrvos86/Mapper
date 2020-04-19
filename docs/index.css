@@ -1,7 +1,6 @@
 body{
     background-color: rgba(0,0,0,.025)!important;
     padding-top: 80px;
-    padding-bottom: 100px;
 }
 
 code.code-block{
@@ -26,6 +25,7 @@ nav.navbar-fixed-top{
 .container{
     padding-top: 50px;
     background-color: white;
+    padding-bottom: 50px;
 }
 
 .form-control{
@@ -41,7 +41,7 @@ nav.navbar-fixed-top{
 }
 
 div.card{
-    margin-top: 20px;
+    margin-top: 40px;
 }
 
 div.card-body.example{
@@ -84,4 +84,16 @@ table.matrix tr td:first-child{
     width: 120px;
     text-align: right;
     background-color: rgba(0,0,0,.1);
+}
+
+footer{
+    width: 100%;
+    padding: 10px 15%;
+    color: white!important;
+    background-color: #343a40!important;
+    text-align: center;
+}
+
+footer a{
+    color: white!important;
 }
