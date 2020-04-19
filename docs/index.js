@@ -35,3 +35,4 @@ runExample(3, example3Data);
 runExample(4, example4Data);
 runExample(5, example5Data);
 runExample(6, example6Data);
+runExample(7, example7Data);

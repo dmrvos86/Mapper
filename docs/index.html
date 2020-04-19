@@ -354,6 +354,45 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 7 -  Using <code>data-attribute</code> instead of value
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample7">
+                                    <p style="text-align: justify;">
+                                        Components like datepickers might not use value attribute to store value in required format.
+                                        Easiest way is to store data in wanted format to <code>data-value</code> attribute. Name of this attribute can
+                                        be changed. 
+                                    </p>
+                                    <p style="text-align: justify;">
+                                        To always set/get date in ISO format, all that needs to be done in following example is to set <code>data-value=""</code> attribute
+                                        and set event <code>onchange="this.setAttribute('data-value', this.valueAsDate.toISOString())"</code>.
+                                    </p>
+
+                                    <div class="form-group">
+                                        <label for="datepicker">Date of birth (<code>map="datepicker"</code>)</label>
+                                        <input type="date" class="form-control" name="dateOfBirth" 
+                                            onchange="this.setAttribute('data-value', this.valueAsDate.toISOString())"
+                                            data-value="" map="dateOfBirth" aria-describedby="dateOfBirth" />
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample7" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample7Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample7Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     </body>
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>

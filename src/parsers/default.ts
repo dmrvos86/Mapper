@@ -18,13 +18,36 @@ class MapAttributeValueParser{
 
     } 
 
-    private parseHtmlTextAreaValue(element: HTMLTextAreaElement): MapAttributeValueGetResult{
-        return MapAttributeValueGetResult.ValueFoundResult(element.value);
+    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement){
+        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+            return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
+
+        return el.value;
     }
 
-    private parseHtmlSelectValue(element: HTMLSelectElement): MapAttributeValueGetResult{
+    protected setElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, valueToSet: string){
+        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+            el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
+        else
+            el.value = valueToSet;
+    }
+
+    private parseHtmlTextAreaValue(mapperConfig: MapperConfiguration, element: HTMLTextAreaElement): MapAttributeValueGetResult{
+        const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+        return MapAttributeValueGetResult.ValueFoundResult(value);
+    }
+
+    private parseHtmlSelectValue(mapperConfig: MapperConfiguration, element: HTMLSelectElement): MapAttributeValueGetResult{
         let returnValue;
-        const selectedValues = Array.from(element.selectedOptions).map(x => x.value || x.text);
+        const selectedValues = Array
+            .from(element.selectedOptions)
+            .map(x =>{ 
+                let value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+                if (value === null || value === undefined)
+                    value = x.text;
+                
+                return value;
+            });
 
         if (element.multiple){
             returnValue = selectedValues;
@@ -36,8 +59,8 @@ class MapAttributeValueParser{
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
-    private parseHtmlInputValue(containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult{
-        let returnValue = element.value as any;
+    private parseHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult{
+        let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element) as any;
 
         switch(element.type){
             case "number":
@@ -79,7 +102,7 @@ class MapAttributeValueParser{
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
-    private setHtmlInputValue(containerElement: HTMLElement, element: HTMLInputElement, valueToSet: any): void{
+    private setHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement, valueToSet: any): void{
         switch(element.type){
             case "checkbox":
             case "radio":
@@ -92,15 +115,15 @@ class MapAttributeValueParser{
 
                 elements
                     .forEach(x => {
-                        x.checked = valueToSet.indexOf(x.value) > -1;
+                        const elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                        x.checked = valueToSet.indexOf(elementValue) > -1;
                     });
 
                 break;
 
             default:
-                element.value = valueToSet;
+                this.setElementValueOrDataValueAttribute(mapperConfig, element, valueToSet as string);
                 break;
-
         };
     }
 
@@ -110,7 +133,7 @@ class MapAttributeValueParser{
         return Array.from(elements);
     }
 
-    public getValue (containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult{
+    public getValue (mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult{
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
 
         // multiple radios and checkboxes with same map attribute are handled
@@ -119,19 +142,19 @@ class MapAttributeValueParser{
         let result = new MapAttributeValueGetResult();
 
         if (element instanceof HTMLInputElement){
-            result = this.parseHtmlInputValue(containerElement, element);
+            result = this.parseHtmlInputValue(mapperConfig, containerElement, element);
         }
         else if (element instanceof HTMLSelectElement){
-            result = this.parseHtmlSelectValue(element);
+            result = this.parseHtmlSelectValue(mapperConfig, element);
         }
         else if (element instanceof HTMLTextAreaElement){
-            result = this.parseHtmlTextAreaValue(element);
+            result = this.parseHtmlTextAreaValue(mapperConfig, element);
         }
 
         return result;
     }
     
-    public setValue (containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
+    public setValue (mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
 
         // multiple radios and checkboxes with same map attribute are handled
@@ -139,7 +162,7 @@ class MapAttributeValueParser{
         const element = elements[0];
 
         if (element instanceof HTMLInputElement){
-            this.setHtmlInputValue(containerElement, element, valueToSet);
+            this.setHtmlInputValue(mapperConfig, containerElement, element, valueToSet);
         }
         else {
             (element as HTMLSelectElement | HTMLTextAreaElement).value = valueToSet;

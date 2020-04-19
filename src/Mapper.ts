@@ -18,15 +18,30 @@ interface MapAttributeSteps{
     "steps": MapStep[]
 }
 
+interface MapperConfiguration{
+    "dataValueAttributeToUseForGet": string;
+    "dataValueAttributeToUseForSet": string;
+}
+
 class Mapper{
     private static elementValueParsers: MapAttributeValueParser[] = [new MapAttributeValueParser()];
 
+    public configuration: MapperConfiguration = {
+        /// alternative to using input value attribute. This is usefull for external libraries (select2, datepickers, ...)
+        /// as this attribute can contain formatted data which needs to be sent to API or used anywhere else
+        // example: input with datepicker will have value "March 3 2020" but we can set data-value to always contain
+        /// ISO date - 2020-03-03
+        /// If left empty - it won't be used
+        "dataValueAttributeToUseForGet": "data-value",
+        "dataValueAttributeToUseForSet": "data-value"
+    }
+
     private getValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string): any {
-        return Mapper.elementValueParsers[0].getValue(containerElement, mapAttribute).value;
+        return Mapper.elementValueParsers[0].getValue(this.configuration, containerElement, mapAttribute).value;
     }
 
     private setValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string, valueToSet: any){
-        return Mapper.elementValueParsers[0].setValue(containerElement, mapAttribute, valueToSet);
+        return Mapper.elementValueParsers[0].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
 
     public getData(containerElement: HTMLElement){

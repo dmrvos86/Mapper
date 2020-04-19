@@ -81,3 +81,7 @@ const example6Data = {
       }
     ]
   }
+
+  const example7Data = {
+    "dateOfBirth": "1986-02-01"
+  }
