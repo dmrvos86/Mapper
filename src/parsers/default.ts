@@ -26,10 +26,14 @@ class MapAttributeValueParser {
     }
 
     protected setElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, valueToSet: string) {
-        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+        if (mapperConfig.dataValueAttributeToUseForSet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))
             el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
         else
             el.value = valueToSet;
+
+        if (mapperConfig.triggerChangeOnSet){
+            el.dispatchEvent(new Event('change'));
+        }
     }
 
     private parseHtmlTextAreaValue(mapperConfig: MapperConfiguration, element: HTMLTextAreaElement): MapAttributeValueGetResult {

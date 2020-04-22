@@ -349,13 +349,13 @@
                                     </p>
                                     <p style="text-align: justify;">
                                         To always set/get date in ISO format, all that needs to be done in following example is to set <code>data-value=""</code> attribute
-                                        and set event <code>onchange="this.setAttribute('data-value', this.valueAsDate.toISOString())"</code>.
+                                        and set event <code>onchange="this.setAttribute('data-value', this.valueAsDate.toISOString().substr(0, 10))"</code>.
                                     </p>
 
                                     <div class="form-group">
                                         <label for="datepicker">Date of birth (<code>map="datepicker"</code>)</label>
                                         <input type="date" class="form-control" name="dateOfBirth" 
-                                            onchange="this.setAttribute('data-value', this.valueAsDate.toISOString())"
+                                            onchange="this.setAttribute('data-value', this.valueAsDate.toISOString().substr(0, 10))"
                                             data-value="" map="dateOfBirth" aria-describedby="dateOfBirth" />
                                     </div>
                                 </form>

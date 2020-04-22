@@ -1,28 +1,21 @@
 /// <reference path="./parsers/default.ts" />
 
-type MapStepTypes = "PROPERTY_TRAVERSE" | "ARRAY_ITEM";
-
-interface MapStep {
-    "type": MapStepTypes;
-    "isLastStep": boolean;
-    "mapAsArray": boolean;
-    "defaultPropertyValue"?: [] | {};
-    "propertyName"?: string;
-    "matchKey"?: string;
-    "matchValue"?: string;
-    "matchIndex"?: number;
-}
-
-interface MapAttributeSteps {
-    "mapAttribute": string,
-    "steps": MapStep[]
-}
-
+/**
+ * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
+ */
 class Mapper {
-    private static elementValueParsers: {[key:string]: MapAttributeValueParser} = {
+    /**
+     * All available parsers - both default or added later
+     */
+    private static elementValueParsers: { [key: string]: MapAttributeValueParser } = {
         "default": new MapAttributeValueParser()
     }
 
+    /**
+     * 
+     * @param containerElement element which contains mapping elements, usually div or form element
+     * @param configuration optional configuration to use
+     */
     constructor(private containerElement: HTMLElement, configuration?: MapperConfiguration) {
         Object.assign(this.configuration, configuration || {});
     }
@@ -34,25 +27,49 @@ class Mapper {
         /// ISO date - 2020-03-03
         /// If left empty - it won't be used
         "dataValueAttributeToUseForGet": "data-value",
-        "dataValueAttributeToUseForSet": "data-value"
+        "dataValueAttributeToUseForSet": "",
+        "triggerChangeOnSet": true
     }
 
-    public static AddMapper(name: string, valueParser: MapAttributeValueParser){
+    /**
+     * Add new parser, used as map-parser="parser_name". If map-parser attribute is missing, default parser is used
+     * @param name parser name
+     * @param valueParser parser implementation
+     */
+    public static AddMapper(name: string, valueParser: MapAttributeValueParser) {
         Mapper.elementValueParsers[name] = valueParser;
     }
 
+    /**
+     * 
+     * @param containerElement element which contains mapping elements
+     * @param mapAttribute map-attribute to process
+     */
     private getValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string): any {
         return Mapper.elementValueParsers["default"].getValue(this.configuration, containerElement, mapAttribute).value;
     }
 
+    /**
+     * 
+     * @param containerElement element which contains mapping elements
+     * @param mapAttribute map-attribute to process
+     * @param valueToSet value to map
+     */
     private setValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string, valueToSet: any) {
         return Mapper.elementValueParsers["default"].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
 
+    /**
+     * Fetch mapped data from defined container element
+     * @param containerElement element which contains mapping elements
+     */
     public static getData(containerElement: HTMLElement) {
         return new Mapper(containerElement).getData();
     }
 
+    /**
+     * Fetch mapped data from container element defined in constructor
+     */
     public getData() {
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
@@ -68,8 +85,6 @@ class Mapper {
                     else {
                         lastCreatedObject[step.propertyName] = elementValue;
                     }
-
-
                 }
                 else {
                     lastCreatedObject[step.propertyName] = lastCreatedObject[step.propertyName] || step.defaultPropertyValue;
@@ -112,10 +127,19 @@ class Mapper {
         return mappedObject;
     }
 
+    /**
+     * Set data to defined container element
+     * @param containerElement container element
+     * @param dataToMap data to map from
+     */
     public static setData(containerElement: HTMLElement, dataToMap: {}) {
         return new Mapper(containerElement).setData(dataToMap);
     }
 
+    /**
+     * Map data from container element defined in constructor
+     * @param dataToMap data to map from
+     */
     public setData(dataToMap: {}) {
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
@@ -162,8 +186,8 @@ class Mapper {
     }
 
     /**
-     * Return only elements with "map" attribute
-     * @param nodes
+     * Return element's map attributes
+     * @param nodes attributes of single node
      */
     private getMapAttributesByElement(nodes: NamedNodeMap) {
         return Array
@@ -182,8 +206,8 @@ class Mapper {
         return (elementsWithMapAttribute as HTMLElement[]);
     }
 
+
     private buildMapProcedureStepsForAllElements(containerElement: HTMLElement): MapAttributeSteps[] {
-        const mapingsParsed = []
         const allMapAttributes = this
             .parseElements(containerElement)
             .map(x => x.getAttribute("map"));
@@ -191,136 +215,7 @@ class Mapper {
         const uniqueMapAttributes = [...new Set(allMapAttributes)];
 
         return uniqueMapAttributes.map(x => {
-            return this.buildMapProcedureStepsForSingleElement(x);
+            return MapProcedureBuilder.buildMapProcedureSteps(x);
         });
-    }
-
-    private buildMapProcedureStepsForSingleElement(mapProperty: string): MapAttributeSteps {
-        const mapPath = mapProperty.split(".");
-
-        const steps: MapStep[] = [];
-
-        type mapType = "ARRAY" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY"
-
-        const getSegmentPathInfo = function (pathSegment: string, index: number) {
-            const isLastSegment = index === (mapPath.length - 1);
-
-            const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
-            if (isErrorMap)
-                throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
-
-            const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
-            const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
-
-            let propertyName = pathSegment;
-            if (propertyName.indexOf('[') > -1)
-                propertyName = propertyName.substr(0, propertyName.indexOf('['));
-
-            const segmentInfo = {
-                "propertyName": propertyName,
-                "mapType": "PROPERTY" as mapType,
-                "isLastSegment": isLastSegment,
-                "mapAsArray": isSimpleArrayMap,
-                "matchKey": undefined as string,
-                "matchValue": undefined as string,
-                "matchIndex": undefined as number
-            }
-
-            if (isSimpleArrayMap) {
-                segmentInfo.mapType = "ARRAY";
-            }
-            else if (isComplexArrayMap) {
-                const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-                const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
-
-                if (isKeyBasedMapping) {
-                    const bracketData = bracketContent.split('=');
-                    const key = bracketData[0];
-                    const valueToMatch = bracketData[1];
-
-                    segmentInfo.mapType = "ARRAY_SEARCH_BY_KEY";
-                    segmentInfo.matchKey = key;
-                    segmentInfo.matchValue = valueToMatch;
-                }
-                else {
-                    segmentInfo.mapType = "ARRAY_SEARCH_BY_INDEX";
-                    segmentInfo.matchIndex = Number(bracketContent);
-                }
-            }
-
-            return segmentInfo;
-        }
-
-        mapPath.forEach((pathSegment, index) => {
-            const segmentInfo = getSegmentPathInfo(pathSegment, index);
-
-            switch (segmentInfo.mapType) {
-                case "PROPERTY":
-                    const stepData: MapStep = {
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": {}
-                    };
-
-                    steps.push(stepData);
-                    break;
-                case "ARRAY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    break;
-
-                case "ARRAY_SEARCH_BY_KEY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-
-                    const propertyValue: any = {};
-                    propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
-
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchKey": segmentInfo.matchKey,
-                        "matchValue": segmentInfo.matchValue,
-                        "defaultPropertyValue": propertyValue
-                    });
-                    break;
-
-                case "ARRAY_SEARCH_BY_INDEX":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchIndex": segmentInfo.matchIndex,
-                        "defaultPropertyValue": {}
-                    });
-                    break;
-            }
-        });
-
-        return {
-            mapAttribute: mapProperty,
-            steps: steps
-        };
     }
 }

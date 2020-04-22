@@ -19,10 +19,13 @@ class MapAttributeValueParser {
         return el.value;
     }
     setElementValueOrDataValueAttribute(mapperConfig, el, valueToSet) {
-        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+        if (mapperConfig.dataValueAttributeToUseForSet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))
             el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
         else
             el.value = valueToSet;
+        if (mapperConfig.triggerChangeOnSet) {
+            el.dispatchEvent(new Event('change'));
+        }
     }
     parseHtmlTextAreaValue(mapperConfig, element) {
         const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
@@ -135,7 +138,15 @@ class MapAttributeValueParser {
     }
 }
 /// <reference path="./parsers/default.ts" />
+/**
+ * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
+ */
 class Mapper {
+    /**
+     *
+     * @param containerElement element which contains mapping elements, usually div or form element
+     * @param configuration optional configuration to use
+     */
     constructor(containerElement, configuration) {
         this.containerElement = containerElement;
         this.configuration = {
@@ -145,22 +156,46 @@ class Mapper {
             /// ISO date - 2020-03-03
             /// If left empty - it won't be used
             "dataValueAttributeToUseForGet": "data-value",
-            "dataValueAttributeToUseForSet": "data-value"
+            "dataValueAttributeToUseForSet": "",
+            "triggerChangeOnSet": true
         };
         Object.assign(this.configuration, configuration || {});
     }
+    /**
+     * Add new parser, used as map-parser="parser_name". If map-parser attribute is missing, default parser is used
+     * @param name parser name
+     * @param valueParser parser implementation
+     */
     static AddMapper(name, valueParser) {
         Mapper.elementValueParsers[name] = valueParser;
     }
+    /**
+     *
+     * @param containerElement element which contains mapping elements
+     * @param mapAttribute map-attribute to process
+     */
     getValueByMapAttribute(containerElement, mapAttribute) {
         return Mapper.elementValueParsers["default"].getValue(this.configuration, containerElement, mapAttribute).value;
     }
+    /**
+     *
+     * @param containerElement element which contains mapping elements
+     * @param mapAttribute map-attribute to process
+     * @param valueToSet value to map
+     */
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
         return Mapper.elementValueParsers["default"].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
+    /**
+     * Fetch mapped data from defined container element
+     * @param containerElement element which contains mapping elements
+     */
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
     }
+    /**
+     * Fetch mapped data from container element defined in constructor
+     */
     getData() {
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
@@ -212,9 +247,18 @@ class Mapper {
         });
         return mappedObject;
     }
+    /**
+     * Set data to defined container element
+     * @param containerElement container element
+     * @param dataToMap data to map from
+     */
     static setData(containerElement, dataToMap) {
         return new Mapper(containerElement).setData(dataToMap);
     }
+    /**
+     * Map data from container element defined in constructor
+     * @param dataToMap data to map from
+     */
     setData(dataToMap) {
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
@@ -254,8 +298,8 @@ class Mapper {
         });
     }
     /**
-     * Return only elements with "map" attribute
-     * @param nodes
+     * Return element's map attributes
+     * @param nodes attributes of single node
      */
     getMapAttributesByElement(nodes) {
         return Array
@@ -272,60 +316,98 @@ class Mapper {
         return elementsWithMapAttribute;
     }
     buildMapProcedureStepsForAllElements(containerElement) {
-        const mapingsParsed = [];
         const allMapAttributes = this
             .parseElements(containerElement)
             .map(x => x.getAttribute("map"));
         const uniqueMapAttributes = [...new Set(allMapAttributes)];
         return uniqueMapAttributes.map(x => {
-            return this.buildMapProcedureStepsForSingleElement(x);
+            return MapProcedureBuilder.buildMapProcedureSteps(x);
         });
     }
-    buildMapProcedureStepsForSingleElement(mapProperty) {
+}
+/**
+ * All available parsers - both default or added later
+ */
+Mapper.elementValueParsers = {
+    "default": new MapAttributeValueParser()
+};
+/**
+ * Parses each segment of mapping path and represents it
+ */
+class SegmentInfo {
+    constructor(propertyName) {
+        this.propertyName = propertyName;
+        this.mapType = "PROPERTY";
+        this.isLastSegment = false;
+        this.mapAsArray = false;
+        this.matchKey = undefined;
+        this.matchValue = undefined;
+        this.matchIndex = undefined;
+    }
+    setAsArrayMap() {
+        this.mapType = "ARRAY";
+        this.mapAsArray = true;
+    }
+    setAsArraySearchByKey(key, valueToMatch) {
+        this.mapType = "ARRAY_SEARCH_BY_KEY";
+        this.matchKey = key;
+        this.matchValue = valueToMatch;
+    }
+    setAsArraySearchByIndex(matchIndex) {
+        this.mapType = "ARRAY_SEARCH_BY_INDEX";
+        this.matchIndex = matchIndex;
+    }
+    validate() {
+        const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
+            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
+            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
+        if (invalidMapping)
+            throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
+    }
+}
+/**
+ * Builds entire procedure required to map single map property.
+ * In summary -> builds MapStep objects from SegmentInfo
+ */
+class MapProcedureBuilder {
+    static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
+        const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
+        if (isErrorMap)
+            throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
+        const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
+        const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
+        let propertyName = pathSegment;
+        if (propertyName.indexOf('[') > -1)
+            propertyName = propertyName.substr(0, propertyName.indexOf('['));
+        const segmentInfo = new SegmentInfo(propertyName);
+        segmentInfo.isLastSegment = isLastSegment;
+        if (isSimpleArrayMap) {
+            segmentInfo.setAsArrayMap();
+        }
+        else if (isComplexArrayMap) {
+            const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
+            const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
+            if (isKeyBasedMapping) {
+                const bracketData = bracketContent.split('=');
+                const key = bracketData[0];
+                const valueToMatch = bracketData[1];
+                segmentInfo.setAsArraySearchByKey(key, valueToMatch);
+            }
+            else {
+                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+            }
+        }
+        segmentInfo.validate();
+        return segmentInfo;
+    }
+    static buildMapProcedureSteps(mapProperty) {
         const mapPath = mapProperty.split(".");
         const steps = [];
-        const getSegmentPathInfo = function (pathSegment, index) {
-            const isLastSegment = index === (mapPath.length - 1);
-            const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
-            if (isErrorMap)
-                throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
-            const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
-            const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
-            let propertyName = pathSegment;
-            if (propertyName.indexOf('[') > -1)
-                propertyName = propertyName.substr(0, propertyName.indexOf('['));
-            const segmentInfo = {
-                "propertyName": propertyName,
-                "mapType": "PROPERTY",
-                "isLastSegment": isLastSegment,
-                "mapAsArray": isSimpleArrayMap,
-                "matchKey": undefined,
-                "matchValue": undefined,
-                "matchIndex": undefined
-            };
-            if (isSimpleArrayMap) {
-                segmentInfo.mapType = "ARRAY";
-            }
-            else if (isComplexArrayMap) {
-                const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-                const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
-                if (isKeyBasedMapping) {
-                    const bracketData = bracketContent.split('=');
-                    const key = bracketData[0];
-                    const valueToMatch = bracketData[1];
-                    segmentInfo.mapType = "ARRAY_SEARCH_BY_KEY";
-                    segmentInfo.matchKey = key;
-                    segmentInfo.matchValue = valueToMatch;
-                }
-                else {
-                    segmentInfo.mapType = "ARRAY_SEARCH_BY_INDEX";
-                    segmentInfo.matchIndex = Number(bracketContent);
-                }
-            }
-            return segmentInfo;
-        };
         mapPath.forEach((pathSegment, index) => {
-            const segmentInfo = getSegmentPathInfo(pathSegment, index);
+            const isLastSegment = index === (mapPath.length - 1);
+            const segmentInfo = MapProcedureBuilder.getSegmentPathInfo(mapProperty, pathSegment, isLastSegment);
             switch (segmentInfo.mapType) {
                 case "PROPERTY":
                     const stepData = {
@@ -389,6 +471,3 @@ class Mapper {
         };
     }
 }
-Mapper.elementValueParsers = {
-    "default": new MapAttributeValueParser()
-};
