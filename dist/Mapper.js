@@ -149,11 +149,14 @@ class Mapper {
         };
         Object.assign(this.configuration, configuration || {});
     }
+    static AddMapper(name, valueParser) {
+        Mapper.elementValueParsers[name] = valueParser;
+    }
     getValueByMapAttribute(containerElement, mapAttribute) {
-        return Mapper.elementValueParsers[0].getValue(this.configuration, containerElement, mapAttribute).value;
+        return Mapper.elementValueParsers["default"].getValue(this.configuration, containerElement, mapAttribute).value;
     }
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
-        return Mapper.elementValueParsers[0].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
+        return Mapper.elementValueParsers["default"].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
     }
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
@@ -386,4 +389,6 @@ class Mapper {
         };
     }
 }
-Mapper.elementValueParsers = [new MapAttributeValueParser()];
+Mapper.elementValueParsers = {
+    "default": new MapAttributeValueParser()
+};

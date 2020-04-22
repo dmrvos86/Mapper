@@ -1,8 +1,8 @@
-class MapAttributeValueGetResult{
-    public parserMatched = false; 
+class MapAttributeValueGetResult {
+    public parserMatched = false;
     public value: any;
 
-    public static ValueFoundResult(value: any): MapAttributeValueGetResult{
+    public static ValueFoundResult(value: any): MapAttributeValueGetResult {
         const result = new MapAttributeValueGetResult();
         result.parserMatched = true;
         result.value = value;
@@ -10,63 +10,63 @@ class MapAttributeValueGetResult{
         return result;
     }
 
-    constructor(){}
+    constructor() { }
 }
 
-class MapAttributeValueParser{
-    constructor(){
+class MapAttributeValueParser {
+    constructor() {
 
-    } 
+    }
 
-    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement){
+    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
         if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
             return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
 
         return el.value;
     }
 
-    protected setElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, valueToSet: string){
+    protected setElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, valueToSet: string) {
         if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
             el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
         else
             el.value = valueToSet;
     }
 
-    private parseHtmlTextAreaValue(mapperConfig: MapperConfiguration, element: HTMLTextAreaElement): MapAttributeValueGetResult{
+    private parseHtmlTextAreaValue(mapperConfig: MapperConfiguration, element: HTMLTextAreaElement): MapAttributeValueGetResult {
         const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
         return MapAttributeValueGetResult.ValueFoundResult(value);
     }
 
-    private parseHtmlSelectValue(mapperConfig: MapperConfiguration, element: HTMLSelectElement): MapAttributeValueGetResult{
+    private parseHtmlSelectValue(mapperConfig: MapperConfiguration, element: HTMLSelectElement): MapAttributeValueGetResult {
         let returnValue;
         const selectedValues = Array
             .from(element.selectedOptions)
-            .map(x =>{ 
+            .map(x => {
                 let value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
                 if (value === null || value === undefined)
                     value = x.text;
-                
+
                 return value;
             });
 
-        if (element.multiple){
+        if (element.multiple) {
             returnValue = selectedValues;
         }
-        else{
+        else {
             returnValue = selectedValues[0];
         }
 
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
-    private parseHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult{
+    private parseHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult {
         let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element) as any;
 
-        switch(element.type){
+        switch (element.type) {
             case "number":
                 returnValue = returnValue * 1; //fastest way to convert
                 break;
-            
+
             // find all input elements with same map attribute
             // checkbox should return array of values
             // radio shoud return single value
@@ -80,7 +80,7 @@ class MapAttributeValueParser{
                     .from(elements)
                     .filter(x => x.checked === true);
 
-                if (element.type === "radio"){
+                if (element.type === "radio") {
                     if (elementsChecked.length === 1)
                         returnValue = elementsChecked[0].value;
                     else if (elementsChecked.length > 1)
@@ -100,8 +100,8 @@ class MapAttributeValueParser{
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
-    private setHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement, valueToSet: any): void{
-        switch(element.type){
+    private setHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement, valueToSet: any): void {
+        switch (element.type) {
             case "checkbox":
             case "radio":
                 const mapAttribute = element.getAttribute("map");
@@ -126,12 +126,12 @@ class MapAttributeValueParser{
     }
 
     // unless these are radios and checkboxes, this should return single element
-    protected getElementsByMapAttribute(containerElement: HTMLElement, mapAttribute: string){
+    protected getElementsByMapAttribute(containerElement: HTMLElement, mapAttribute: string) {
         const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
         return Array.from(elements);
     }
 
-    public getValue (mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult{
+    public getValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult {
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
 
         // multiple radios and checkboxes with same map attribute are handled
@@ -139,27 +139,27 @@ class MapAttributeValueParser{
         const element = elements[0];
         let result = new MapAttributeValueGetResult();
 
-        if (element instanceof HTMLInputElement){
+        if (element instanceof HTMLInputElement) {
             result = this.parseHtmlInputValue(mapperConfig, containerElement, element);
         }
-        else if (element instanceof HTMLSelectElement){
+        else if (element instanceof HTMLSelectElement) {
             result = this.parseHtmlSelectValue(mapperConfig, element);
         }
-        else if (element instanceof HTMLTextAreaElement){
+        else if (element instanceof HTMLTextAreaElement) {
             result = this.parseHtmlTextAreaValue(mapperConfig, element);
         }
 
         return result;
     }
-    
-    public setValue (mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
+
+    public setValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
         const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
 
         // multiple radios and checkboxes with same map attribute are handled
         // inside their parse functions. That's why we can take single element here
         const element = elements[0];
 
-        if (element instanceof HTMLInputElement){
+        if (element instanceof HTMLInputElement) {
             this.setHtmlInputValue(mapperConfig, containerElement, element, valueToSet);
         }
         else {

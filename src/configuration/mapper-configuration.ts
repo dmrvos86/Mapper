@@ -1,4 +1,4 @@
-interface MapperConfiguration{
+interface MapperConfiguration {
     "dataValueAttributeToUseForGet": string;
     "dataValueAttributeToUseForSet": string;
 }
