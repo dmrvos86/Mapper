@@ -1,4 +1,7 @@
+/// <reference path="./configuration/mapper-configuration.ts" />
 /// <reference path="./parsers/default.ts" />
+/// <reference path="./parsers/json.ts" />
+/// <reference path="./utils/map-procedure-builder.ts" />
 
 /**
  * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
@@ -8,7 +11,8 @@ class Mapper {
      * All available parsers - both default or added later
      */
     private static elementValueParsers: { [key: string]: MapAttributeValueParser } = {
-        "default": new MapAttributeValueParser()
+        "default": new MapAttributeValueParser(),
+        "json": new MapAttributeJsonParser()
     }
 
     /**
@@ -42,11 +46,26 @@ class Mapper {
 
     /**
      * 
+     * @param containerElement 
+     * @param mapAttribute 
+     */
+    protected getFirstElementByMapAttribute(containerElement: HTMLElement, mapAttribute: string): HTMLElement {
+        return containerElement.querySelector(`[map="${mapAttribute}"]`);
+    }
+
+    private getElementParser(element: HTMLElement) {
+        return element.getAttribute("map-parser") || "default";
+    }
+
+    /**
+     * 
      * @param containerElement element which contains mapping elements
      * @param mapAttribute map-attribute to process
      */
     private getValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string): any {
-        return Mapper.elementValueParsers["default"].getValue(this.configuration, containerElement, mapAttribute).value;
+        const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
+        const parser = this.getElementParser(mapElement);
+        return Mapper.elementValueParsers[parser].getValue(this.configuration, mapElement, containerElement).value;
     }
 
     /**
@@ -56,7 +75,9 @@ class Mapper {
      * @param valueToSet value to map
      */
     private setValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string, valueToSet: any) {
-        return Mapper.elementValueParsers["default"].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
+        const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
+        const parser = this.getElementParser(mapElement);
+        return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
     }
 
     /**

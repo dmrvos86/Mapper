@@ -135,39 +135,28 @@ class MapAttributeValueParser {
         return Array.from(elements);
     }
 
-    public getValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string): MapAttributeValueGetResult {
-        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
-
-        // multiple radios and checkboxes with same map attribute are handled
-        // inside their parse functions. That's why we can take single element here
-        const element = elements[0];
+    public getValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement): MapAttributeValueGetResult {
         let result = new MapAttributeValueGetResult();
 
-        if (element instanceof HTMLInputElement) {
-            result = this.parseHtmlInputValue(mapperConfig, containerElement, element);
+        if (mapElement instanceof HTMLInputElement) {
+            result = this.parseHtmlInputValue(mapperConfig, containerElement, mapElement);
         }
-        else if (element instanceof HTMLSelectElement) {
-            result = this.parseHtmlSelectValue(mapperConfig, element);
+        else if (mapElement instanceof HTMLSelectElement) {
+            result = this.parseHtmlSelectValue(mapperConfig, mapElement);
         }
-        else if (element instanceof HTMLTextAreaElement) {
-            result = this.parseHtmlTextAreaValue(mapperConfig, element);
+        else if (mapElement instanceof HTMLTextAreaElement) {
+            result = this.parseHtmlTextAreaValue(mapperConfig, mapElement);
         }
 
         return result;
     }
 
-    public setValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, mapAttribute: string, valueToSet: any): boolean {
-        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
-
-        // multiple radios and checkboxes with same map attribute are handled
-        // inside their parse functions. That's why we can take single element here
-        const element = elements[0];
-
-        if (element instanceof HTMLInputElement) {
-            this.setHtmlInputValue(mapperConfig, containerElement, element, valueToSet);
+    public setValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement, valueToSet: any): boolean {
+        if (mapElement instanceof HTMLInputElement) {
+            this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
         }
         else {
-            (element as HTMLSelectElement | HTMLTextAreaElement).value = valueToSet;
+            (mapElement as HTMLSelectElement | HTMLTextAreaElement).value = valueToSet;
         }
 
         return true;

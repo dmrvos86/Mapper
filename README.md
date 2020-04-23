@@ -1,5 +1,14 @@
 ## Mapper
 
+This page contains code samples, configuration options and general idea behind mapper. To see live exmaples of mapper in action please go to [Mapper GitHub pages](https://dmrvos86.github.io/Mapper/index.html#examples).
+
+1. [About](#about)
+2. [Usage](#usage)
+3. [Custom mappers](#custom-mappers)
+4. [Author](#author)
+
+### About
+
 Mapper is very simple JavaScript library which is used to get/set data from forms or any other container. It's entirely written in TypeScript, without any external dependencies. Primary motivation for building tool like this was:
 
 - using .Net Core and Razor pages is very simple and fast way to build apps. In order to communicate with APIs, I needed simple way to map data to and from forms.
@@ -7,7 +16,7 @@ Mapper is very simple JavaScript library which is used to get/set data from form
 - wanted to have library which is written using vanilla typescript
 - didn't want to introduce other libraries which by themselves have other dependencies which by themselves have other ...
 - to modify it to automatically work with other components I usually use in projects like bootstrap datepicker, select2, ...
-to have my first public project on GitHub
+- to have my first public project on GitHub
 
 ### Usage
 
@@ -86,9 +95,7 @@ HTML
 
 Procedure is same as above, just instead of assigning values to object - values are assigned to DomElements.
 
-#### Live examples
-
-Please visit [Mapper GitHub pages](https://dmrvos86.github.io/Mapper/index.html#examples) to test mapper and see real-life scenarios.
+### Custom mappers
 
 ### Author
 

@@ -371,6 +371,38 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Example 8 -  Mapping raw JSON data
+                        </div>
+                        <div class="card-body example">
+                            <div class="example-left">
+                                <form id="formExample8">
+                                    <p style="text-align: justify;">
+                                        Additional parsers can be specified (please see project page for more info) and used to map data. Json parser sets JSON data 
+                                        as string and gets it back as JSON.
+                                    </p>
+
+                                    <div class="form-group">
+                                        <label for="dynamicData">Date of birth (<code>map="dynamicData" map-parser="json"</code>)</label>
+                                        <input type="text" class="form-control" name="dynamicData"  map="dynamicData" map-parser="json" aria-describedby="dynamicData" />
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="example-right">
+                                <textarea class="form-control" id="txtExample8" style="height: 90%;"></textarea>
+                            </div>
+                            <div class="example-actions">
+                                <button type="button" class="btn btn-primary" id="btnExample8Get"> Get </button>
+                                <button type="button" class="btn btn-secondary" id="btnExample8Set"> Set </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <footer>
             <a class="nav-link" href="https://github.com/dmrvos86/Mapper" target="blank">

@@ -85,3 +85,7 @@ const example6Data = {
   const example7Data = {
     "dateOfBirth": "1986-02-01"
   }
+
+  const example8Data = {
+    "dynamicData": {"dynamicNumber": 123, "dynamicString": "example"}
+  }

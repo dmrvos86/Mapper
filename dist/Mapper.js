@@ -106,38 +106,192 @@ class MapAttributeValueParser {
         const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
         return Array.from(elements);
     }
-    getValue(mapperConfig, containerElement, mapAttribute) {
-        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
-        // multiple radios and checkboxes with same map attribute are handled
-        // inside their parse functions. That's why we can take single element here
-        const element = elements[0];
+    getValue(mapperConfig, mapElement, containerElement) {
         let result = new MapAttributeValueGetResult();
-        if (element instanceof HTMLInputElement) {
-            result = this.parseHtmlInputValue(mapperConfig, containerElement, element);
+        if (mapElement instanceof HTMLInputElement) {
+            result = this.parseHtmlInputValue(mapperConfig, containerElement, mapElement);
         }
-        else if (element instanceof HTMLSelectElement) {
-            result = this.parseHtmlSelectValue(mapperConfig, element);
+        else if (mapElement instanceof HTMLSelectElement) {
+            result = this.parseHtmlSelectValue(mapperConfig, mapElement);
         }
-        else if (element instanceof HTMLTextAreaElement) {
-            result = this.parseHtmlTextAreaValue(mapperConfig, element);
+        else if (mapElement instanceof HTMLTextAreaElement) {
+            result = this.parseHtmlTextAreaValue(mapperConfig, mapElement);
         }
         return result;
     }
-    setValue(mapperConfig, containerElement, mapAttribute, valueToSet) {
-        const elements = this.getElementsByMapAttribute(containerElement, mapAttribute);
-        // multiple radios and checkboxes with same map attribute are handled
-        // inside their parse functions. That's why we can take single element here
-        const element = elements[0];
-        if (element instanceof HTMLInputElement) {
-            this.setHtmlInputValue(mapperConfig, containerElement, element, valueToSet);
+    setValue(mapperConfig, mapElement, containerElement, valueToSet) {
+        if (mapElement instanceof HTMLInputElement) {
+            this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
         }
         else {
-            element.value = valueToSet;
+            mapElement.value = valueToSet;
         }
         return true;
     }
 }
+class MapAttributeJsonParser extends MapAttributeValueParser {
+    constructor() {
+        super();
+    }
+    getValue(mapperConfig, mapElement, containerElement) {
+        const value = super.getValue(mapperConfig, mapElement, containerElement);
+        value.value = JSON.parse(value.value);
+        console.log("getvalue");
+        console.log(value);
+        return value;
+    }
+    setValue(mapperConfig, mapElement, containerElement, valueToSet) {
+        const jsonValueToSet = JSON.stringify(valueToSet);
+        console.log("setvalue");
+        console.log(valueToSet);
+        console.log(jsonValueToSet);
+        return super.setValue(mapperConfig, mapElement, containerElement, jsonValueToSet);
+    }
+}
+/**
+ * Parses each segment of mapping path and represents it
+ */
+class SegmentInfo {
+    constructor(propertyName) {
+        this.propertyName = propertyName;
+        this.mapType = "PROPERTY";
+        this.isLastSegment = false;
+        this.mapAsArray = false;
+        this.matchKey = undefined;
+        this.matchValue = undefined;
+        this.matchIndex = undefined;
+    }
+    setAsArrayMap() {
+        this.mapType = "ARRAY";
+        this.mapAsArray = true;
+    }
+    setAsArraySearchByKey(key, valueToMatch) {
+        this.mapType = "ARRAY_SEARCH_BY_KEY";
+        this.matchKey = key;
+        this.matchValue = valueToMatch;
+    }
+    setAsArraySearchByIndex(matchIndex) {
+        this.mapType = "ARRAY_SEARCH_BY_INDEX";
+        this.matchIndex = matchIndex;
+    }
+    validate() {
+        const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
+            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
+            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
+        if (invalidMapping)
+            throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
+    }
+}
+/**
+ * Builds entire procedure required to map single map property.
+ * In summary -> builds MapStep objects from SegmentInfo
+ */
+class MapProcedureBuilder {
+    static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
+        const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
+        if (isErrorMap)
+            throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
+        const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
+        const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
+        let propertyName = pathSegment;
+        if (propertyName.indexOf('[') > -1)
+            propertyName = propertyName.substr(0, propertyName.indexOf('['));
+        const segmentInfo = new SegmentInfo(propertyName);
+        segmentInfo.isLastSegment = isLastSegment;
+        if (isSimpleArrayMap) {
+            segmentInfo.setAsArrayMap();
+        }
+        else if (isComplexArrayMap) {
+            const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
+            const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
+            if (isKeyBasedMapping) {
+                const bracketData = bracketContent.split('=');
+                const key = bracketData[0];
+                const valueToMatch = bracketData[1];
+                segmentInfo.setAsArraySearchByKey(key, valueToMatch);
+            }
+            else {
+                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+            }
+        }
+        segmentInfo.validate();
+        return segmentInfo;
+    }
+    static buildMapProcedureSteps(mapProperty) {
+        const mapPath = mapProperty.split(".");
+        const steps = [];
+        mapPath.forEach((pathSegment, index) => {
+            const isLastSegment = index === (mapPath.length - 1);
+            const segmentInfo = MapProcedureBuilder.getSegmentPathInfo(mapProperty, pathSegment, isLastSegment);
+            switch (segmentInfo.mapType) {
+                case "PROPERTY":
+                    const stepData = {
+                        "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "propertyName": segmentInfo.propertyName,
+                        "defaultPropertyValue": {}
+                    };
+                    steps.push(stepData);
+                    break;
+                case "ARRAY":
+                    steps.push({
+                        "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "propertyName": segmentInfo.propertyName,
+                        "defaultPropertyValue": []
+                    });
+                    break;
+                case "ARRAY_SEARCH_BY_KEY":
+                    steps.push({
+                        "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "propertyName": segmentInfo.propertyName,
+                        "defaultPropertyValue": []
+                    });
+                    const propertyValue = {};
+                    propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
+                    steps.push({
+                        "type": "ARRAY_ITEM",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "matchKey": segmentInfo.matchKey,
+                        "matchValue": segmentInfo.matchValue,
+                        "defaultPropertyValue": propertyValue
+                    });
+                    break;
+                case "ARRAY_SEARCH_BY_INDEX":
+                    steps.push({
+                        "type": "PROPERTY_TRAVERSE",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "propertyName": segmentInfo.propertyName,
+                        "defaultPropertyValue": []
+                    });
+                    steps.push({
+                        "type": "ARRAY_ITEM",
+                        "mapAsArray": segmentInfo.mapAsArray,
+                        "isLastStep": segmentInfo.isLastSegment,
+                        "matchIndex": segmentInfo.matchIndex,
+                        "defaultPropertyValue": {}
+                    });
+                    break;
+            }
+        });
+        return {
+            mapAttribute: mapProperty,
+            steps: steps
+        };
+    }
+}
+/// <reference path="./configuration/mapper-configuration.ts" />
 /// <reference path="./parsers/default.ts" />
+/// <reference path="./parsers/json.ts" />
+/// <reference path="./utils/map-procedure-builder.ts" />
 /**
  * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
  */
@@ -171,11 +325,24 @@ class Mapper {
     }
     /**
      *
+     * @param containerElement
+     * @param mapAttribute
+     */
+    getFirstElementByMapAttribute(containerElement, mapAttribute) {
+        return containerElement.querySelector(`[map="${mapAttribute}"]`);
+    }
+    getElementParser(element) {
+        return element.getAttribute("map-parser") || "default";
+    }
+    /**
+     *
      * @param containerElement element which contains mapping elements
      * @param mapAttribute map-attribute to process
      */
     getValueByMapAttribute(containerElement, mapAttribute) {
-        return Mapper.elementValueParsers["default"].getValue(this.configuration, containerElement, mapAttribute).value;
+        const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
+        const parser = this.getElementParser(mapElement);
+        return Mapper.elementValueParsers[parser].getValue(this.configuration, mapElement, containerElement).value;
     }
     /**
      *
@@ -184,7 +351,9 @@ class Mapper {
      * @param valueToSet value to map
      */
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
-        return Mapper.elementValueParsers["default"].setValue(this.configuration, containerElement, mapAttribute, valueToSet);
+        const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
+        const parser = this.getElementParser(mapElement);
+        return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
     }
     /**
      * Fetch mapped data from defined container element
@@ -329,145 +498,6 @@ class Mapper {
  * All available parsers - both default or added later
  */
 Mapper.elementValueParsers = {
-    "default": new MapAttributeValueParser()
+    "default": new MapAttributeValueParser(),
+    "json": new MapAttributeJsonParser()
 };
-/**
- * Parses each segment of mapping path and represents it
- */
-class SegmentInfo {
-    constructor(propertyName) {
-        this.propertyName = propertyName;
-        this.mapType = "PROPERTY";
-        this.isLastSegment = false;
-        this.mapAsArray = false;
-        this.matchKey = undefined;
-        this.matchValue = undefined;
-        this.matchIndex = undefined;
-    }
-    setAsArrayMap() {
-        this.mapType = "ARRAY";
-        this.mapAsArray = true;
-    }
-    setAsArraySearchByKey(key, valueToMatch) {
-        this.mapType = "ARRAY_SEARCH_BY_KEY";
-        this.matchKey = key;
-        this.matchValue = valueToMatch;
-    }
-    setAsArraySearchByIndex(matchIndex) {
-        this.mapType = "ARRAY_SEARCH_BY_INDEX";
-        this.matchIndex = matchIndex;
-    }
-    validate() {
-        const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
-            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
-            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
-        if (invalidMapping)
-            throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
-    }
-}
-/**
- * Builds entire procedure required to map single map property.
- * In summary -> builds MapStep objects from SegmentInfo
- */
-class MapProcedureBuilder {
-    static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
-        const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
-        if (isErrorMap)
-            throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
-        const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
-        const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
-        let propertyName = pathSegment;
-        if (propertyName.indexOf('[') > -1)
-            propertyName = propertyName.substr(0, propertyName.indexOf('['));
-        const segmentInfo = new SegmentInfo(propertyName);
-        segmentInfo.isLastSegment = isLastSegment;
-        if (isSimpleArrayMap) {
-            segmentInfo.setAsArrayMap();
-        }
-        else if (isComplexArrayMap) {
-            const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
-            if (isKeyBasedMapping) {
-                const bracketData = bracketContent.split('=');
-                const key = bracketData[0];
-                const valueToMatch = bracketData[1];
-                segmentInfo.setAsArraySearchByKey(key, valueToMatch);
-            }
-            else {
-                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
-            }
-        }
-        segmentInfo.validate();
-        return segmentInfo;
-    }
-    static buildMapProcedureSteps(mapProperty) {
-        const mapPath = mapProperty.split(".");
-        const steps = [];
-        mapPath.forEach((pathSegment, index) => {
-            const isLastSegment = index === (mapPath.length - 1);
-            const segmentInfo = MapProcedureBuilder.getSegmentPathInfo(mapProperty, pathSegment, isLastSegment);
-            switch (segmentInfo.mapType) {
-                case "PROPERTY":
-                    const stepData = {
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": {}
-                    };
-                    steps.push(stepData);
-                    break;
-                case "ARRAY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    break;
-                case "ARRAY_SEARCH_BY_KEY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    const propertyValue = {};
-                    propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchKey": segmentInfo.matchKey,
-                        "matchValue": segmentInfo.matchValue,
-                        "defaultPropertyValue": propertyValue
-                    });
-                    break;
-                case "ARRAY_SEARCH_BY_INDEX":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchIndex": segmentInfo.matchIndex,
-                        "defaultPropertyValue": {}
-                    });
-                    break;
-            }
-        });
-        return {
-            mapAttribute: mapProperty,
-            steps: steps
-        };
-    }
-}
