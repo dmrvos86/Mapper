@@ -53,11 +53,8 @@ class MapAttributeValueParser {
         let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element);
         switch (element.type) {
             case "number":
-                returnValue = returnValue * 1; //fastest way to convert
+                returnValue = returnValue * 1;
                 break;
-            // find all input elements with same map attribute
-            // checkbox should return array of values
-            // radio shoud return single value
             case "checkbox":
             case "radio":
                 const mapAttribute = element.getAttribute("map");
@@ -101,7 +98,6 @@ class MapAttributeValueParser {
         }
         ;
     }
-    // unless these are radios and checkboxes, this should return single element
     getElementsByMapAttribute(containerElement, mapAttribute) {
         const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
         return Array.from(elements);
@@ -143,9 +139,6 @@ class MapAttributeJsonParser extends MapAttributeValueParser {
         return super.setValue(mapperConfig, mapElement, containerElement, jsonValueToSet);
     }
 }
-/**
- * Parses each segment of mapping path and represents it
- */
 class SegmentInfo {
     constructor(propertyName) {
         this.propertyName = propertyName;
@@ -179,10 +172,6 @@ class SegmentInfo {
             throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
     }
 }
-/**
- * Builds entire procedure required to map single map property.
- * In summary -> builds MapStep objects from SegmentInfo
- */
 class MapProcedureBuilder {
     static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
         const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
@@ -200,7 +189,7 @@ class MapProcedureBuilder {
         }
         else if (isComplexArrayMap) {
             const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
+            const isKeyBasedMapping = isNaN(Number(bracketContent));
             if (isKeyBasedMapping) {
                 const bracketData = bracketContent.split('=');
                 const key = bracketData[0];
@@ -283,89 +272,44 @@ class MapProcedureBuilder {
         };
     }
 }
-/// <reference path="./configuration/mapper-configuration.ts" />
-/// <reference path="./parsers/default.ts" />
-/// <reference path="./parsers/json.ts" />
-/// <reference path="./utils/map-procedure-builder.ts" />
-/**
- * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
- */
 class Mapper {
-    /**
-     *
-     * @param containerElement element which contains mapping elements, usually div or form element
-     * @param configuration optional configuration to use
-     */
     constructor(containerElement, configuration) {
         this.containerElement = containerElement;
         this.configuration = {
-            /// alternative to using input value attribute. This is usefull for external libraries (select2, datepickers, ...)
-            /// as this attribute can contain formatted data which needs to be sent to API or used anywhere else
-            // example: input with datepicker will have value "March 3 2020" but we can set data-value to always contain
-            /// ISO date - 2020-03-03
-            /// If left empty - it won't be used
             "dataValueAttributeToUseForGet": "data-value",
             "dataValueAttributeToUseForSet": "",
             "triggerChangeOnSet": true
         };
         Object.assign(this.configuration, configuration || {});
     }
-    /**
-     * Add new parser, used as map-parser="parser_name". If map-parser attribute is missing, default parser is used
-     * @param name parser name
-     * @param valueParser parser implementation
-     */
     static AddMapper(name, valueParser) {
         Mapper.elementValueParsers[name] = valueParser;
     }
-    /**
-     *
-     * @param containerElement
-     * @param mapAttribute
-     */
     getFirstElementByMapAttribute(containerElement, mapAttribute) {
         return containerElement.querySelector(`[map="${mapAttribute}"]`);
     }
     getElementParser(element) {
         return element.getAttribute("map-parser") || "default";
     }
-    /**
-     *
-     * @param containerElement element which contains mapping elements
-     * @param mapAttribute map-attribute to process
-     */
     getValueByMapAttribute(containerElement, mapAttribute) {
         const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
         const parser = this.getElementParser(mapElement);
         return Mapper.elementValueParsers[parser].getValue(this.configuration, mapElement, containerElement).value;
     }
-    /**
-     *
-     * @param containerElement element which contains mapping elements
-     * @param mapAttribute map-attribute to process
-     * @param valueToSet value to map
-     */
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
         const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
         const parser = this.getElementParser(mapElement);
         return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
     }
-    /**
-     * Fetch mapped data from defined container element
-     * @param containerElement element which contains mapping elements
-     */
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
     }
-    /**
-     * Fetch mapped data from container element defined in constructor
-     */
     getData() {
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, lastCreatedObject) => {
-                if (step.isLastStep) { //if element value should be mapped
+                if (step.isLastStep) {
                     var elementValue = this.getValueByMapAttribute(this.containerElement, mapAttribute);
                     if (Array.isArray(elementValue) && !step.mapAsArray) {
                         lastCreatedObject[step.propertyName] = elementValue[0];
@@ -380,7 +324,6 @@ class Mapper {
                 }
             },
             "ARRAY_ITEM": (_, step, lastCreatedObject) => {
-                //key-value search
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filteredArray = lastCreatedObject.filter(x => x[step.matchKey] == step.matchValue);
                     if (filteredArray.length > 0) {
@@ -392,12 +335,10 @@ class Mapper {
                         return elementToAdd;
                     }
                 }
-                //index search
                 else if (step.matchIndex >= 0) {
                     lastCreatedObject[step.matchIndex] = lastCreatedObject[step.matchIndex] || step.defaultPropertyValue;
                     return lastCreatedObject[step.matchIndex];
                 }
-                // element value should be mapped
                 else {
                     throw "Sholdn't be here";
                 }
@@ -411,25 +352,16 @@ class Mapper {
         });
         return mappedObject;
     }
-    /**
-     * Set data to defined container element
-     * @param containerElement container element
-     * @param dataToMap data to map from
-     */
     static setData(containerElement, dataToMap) {
         return new Mapper(containerElement).setData(dataToMap);
     }
-    /**
-     * Map data from container element defined in constructor
-     * @param dataToMap data to map from
-     */
     setData(dataToMap) {
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, currentPath) => {
                 if (step.isLastStep)
                     this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
-                else if (currentPath[step.propertyName] instanceof (Object)) //if element value should be mapped
+                else if (currentPath[step.propertyName] instanceof (Object))
                     return currentPath[step.propertyName];
                 else
                     throw "invalid";
@@ -442,11 +374,9 @@ class Mapper {
                     if (filtered.length > 0)
                         return filtered[0];
                 }
-                //index search
                 else if (step.matchIndex >= 0) {
                     return currentPath[step.matchIndex];
                 }
-                // element value should be mapped
                 else {
                     if (step.isLastStep)
                         throw "Should not be here";
@@ -461,18 +391,11 @@ class Mapper {
             });
         });
     }
-    /**
-     * Return element's map attributes
-     * @param nodes attributes of single node
-     */
     getMapAttributesByElement(nodes) {
         return Array
             .from(nodes)
             .filter((v) => v.name == "map");
     }
-    /**
-     * Return elements which are candidates for value parsing
-     * */
     parseElements(containerElement) {
         const elementsWithMapAttribute = Array
             .from(containerElement.querySelectorAll("input,textarea,select"))
@@ -489,9 +412,6 @@ class Mapper {
         });
     }
 }
-/**
- * All available parsers - both default or added later
- */
 Mapper.elementValueParsers = {
     "default": new MapAttributeValueParser(),
     "json": new MapAttributeJsonParser()

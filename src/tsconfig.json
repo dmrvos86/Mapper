@@ -3,13 +3,15 @@
     "compilerOptions": {
         "allowJs": false,
         "alwaysStrict": true,
+        "removeComments": true,
         "noUnusedParameters": true,
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "noUnusedLocals": true,
         "noEmitOnError": true,
+        "declaration": true,
         "outDir": "../dist",
-        "outFile": "../dist/mapper.js",
+        "outFile": "../dist/mapper-standalone/mapper.js",
         "lib": ["ES6", "DOM"],
         "target": "ES2017"
     }

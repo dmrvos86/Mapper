@@ -1,0 +1,9 @@
+{
+    "name": "@dmrvos/mapper-standalone",
+    "displayName": "Mapper",
+    "description": "Simple javascript library for binding JSON data to input elements or vice-versa. Visit homepage for more info and examples.",
+    "homepage": "https://github.com/dmrvos86/Mapper",
+    "author": "Drazen Mrvos",
+    "version": "0.0.2",
+    "types": "./mapper.d.ts"
+}
