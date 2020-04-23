@@ -136,15 +136,10 @@ class MapAttributeJsonParser extends MapAttributeValueParser {
     getValue(mapperConfig, mapElement, containerElement) {
         const value = super.getValue(mapperConfig, mapElement, containerElement);
         value.value = JSON.parse(value.value);
-        console.log("getvalue");
-        console.log(value);
         return value;
     }
     setValue(mapperConfig, mapElement, containerElement, valueToSet) {
         const jsonValueToSet = JSON.stringify(valueToSet);
-        console.log("setvalue");
-        console.log(valueToSet);
-        console.log(jsonValueToSet);
         return super.setValue(mapperConfig, mapElement, containerElement, jsonValueToSet);
     }
 }
