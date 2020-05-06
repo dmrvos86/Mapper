@@ -36,11 +36,21 @@ class MapAttributeValueParser {
         }
     }
 
+    /**
+     * Handles textarea elements parsing
+     * @param mapperConfig
+     * @param element 
+     */
     private parseHtmlTextAreaValue(mapperConfig: MapperConfiguration, element: HTMLTextAreaElement): MapAttributeValueGetResult {
         const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
         return MapAttributeValueGetResult.ValueFoundResult(value);
     }
 
+    /**
+     * Handles select elements parsing (single, multiple)
+     * @param mapperConfig
+     * @param element 
+     */
     private parseHtmlSelectValue(mapperConfig: MapperConfiguration, element: HTMLSelectElement): MapAttributeValueGetResult {
         let returnValue;
         const selectedValues = Array
@@ -63,6 +73,12 @@ class MapAttributeValueParser {
         return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
 
+    /**
+     * Handles input elements parsing 
+     * @param mapperConfig
+     * @param containerElement 
+     * @param element 
+     */
     private parseHtmlInputValue(mapperConfig: MapperConfiguration, containerElement: HTMLElement, element: HTMLInputElement): MapAttributeValueGetResult {
         let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element) as any;
 
@@ -135,6 +151,12 @@ class MapAttributeValueParser {
         return Array.from(elements);
     }
 
+    /**
+     * Get value from element
+     * @param mapperConfig
+     * @param mapElement 
+     * @param containerElement 
+     */
     public getValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement): MapAttributeValueGetResult {
         let result = new MapAttributeValueGetResult();
 
@@ -151,6 +173,13 @@ class MapAttributeValueParser {
         return result;
     }
 
+    /**
+     * Set value to element
+     * @param mapperConfig
+     * @param mapElement 
+     * @param containerElement 
+     * @param valueToSet 
+     */
     public setValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement, valueToSet: any): boolean {
         if (mapElement instanceof HTMLInputElement) {
             this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
