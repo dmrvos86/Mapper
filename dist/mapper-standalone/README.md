@@ -7,6 +7,7 @@ This page contains code samples, configuration options and general idea behind m
 3. [Custom mappers](#custom-mappers)
 4. [Author](#author)
 
+
 ### About
 
 Mapper is very simple JavaScript library which is used to get/set data from forms or any other container. It's entirely written in TypeScript, without any external dependencies. Primary motivation for building tool like this was:

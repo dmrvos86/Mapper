@@ -153,6 +153,9 @@ class SegmentInfo {
         this.mapType = "ARRAY";
         this.mapAsArray = true;
     }
+    setAsArraySearch() {
+        this.mapType = "ARRAY_SEARCH";
+    }
     setAsArraySearchByKey(key, valueToMatch) {
         this.mapType = "ARRAY_SEARCH_BY_KEY";
         this.matchKey = key;
@@ -167,7 +170,8 @@ class SegmentInfo {
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
             || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue))
+            || (this.mapType === "ARRAY_SEARCH" && !this.isLastSegment);
         if (invalidMapping)
             throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
     }
@@ -189,15 +193,23 @@ class MapProcedureBuilder {
         }
         else if (isComplexArrayMap) {
             const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isKeyBasedMapping = isNaN(Number(bracketContent));
+            const isArraySearchMapping = !bracketContent;
+            const isKeyBasedMapping = !isArraySearchMapping && isNaN(Number(bracketContent));
+            const isIndexBasedMapping = !isArraySearchMapping && !isKeyBasedMapping;
             if (isKeyBasedMapping) {
                 const bracketData = bracketContent.split('=');
                 const key = bracketData[0];
                 const valueToMatch = bracketData[1];
                 segmentInfo.setAsArraySearchByKey(key, valueToMatch);
             }
-            else {
+            else if (isKeyBasedMapping) {
+                segmentInfo.setAsArraySearch();
+            }
+            else if (isIndexBasedMapping) {
                 segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+            }
+            else {
+                throw "Shouldn't be here";
             }
         }
         segmentInfo.validate();

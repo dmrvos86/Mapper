@@ -1,11 +1,12 @@
 /**
  * Describes every segment in mapping path (in x.y.z path, segments are x, y and z) 
- * ARRAY for x[]
- * ARRAY_SEARCH_BY_KEY for x[y=1]
- * ARRAY_SEARCH_BY_INDEX for x[0]
+ * ARRAY for x[] - used when value assigned/set is array
+ * ARRAY_SEARCH for x[].y 
+ * ARRAY_SEARCH_BY_KEY for x[y=1].z
+ * ARRAY_SEARCH_BY_INDEX for x[0].z
  * PROPERTY for x.y
  */
-type mapType = "ARRAY" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY"
+type mapType = "ARRAY" | "ARRAY_SEARCH" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY"
 
 /**
  * Parses each segment of mapping path and represents it
@@ -20,17 +21,36 @@ class SegmentInfo{
     public matchValue = undefined as string;
     public matchIndex = undefined as number;
 
+    /**
+     * Handles cases like x.y.z[]
+     */
     public setAsArrayMap(){
         this.mapType = "ARRAY";
         this.mapAsArray = true;
     }
 
+    /**
+     * Handles cases like x.y[].z
+     */
+    public setAsArraySearch(){
+        this.mapType = "ARRAY_SEARCH";
+    }
+
+    /**
+     * Handles cases like x.y[p=1].z
+     * @param key Key used for matching
+     * @param valueToMatch Value used for matching
+     */
     public setAsArraySearchByKey(key: string, valueToMatch: string){
         this.mapType = "ARRAY_SEARCH_BY_KEY";
         this.matchKey = key;
         this.matchValue = valueToMatch;
     }
 
+    /**
+     * Handles cases like x.y[1].z
+     * @param matchIndex Index to match
+     */
     public setAsArraySearchByIndex(matchIndex: number){
         this.mapType = "ARRAY_SEARCH_BY_INDEX";
         this.matchIndex = matchIndex;
@@ -42,7 +62,8 @@ class SegmentInfo{
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
             || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue))
+            || (this.mapType === "ARRAY_SEARCH" && this.isLastSegment);
 
         if (invalidMapping)
             throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
@@ -99,7 +120,15 @@ class MapProcedureBuilder{
         }
         else if (isComplexArrayMap) {
             const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isKeyBasedMapping = isNaN(Number(bracketContent)); //vs index base mapping
+            
+            // if nothing is inside brackets - it's array search (x.y[].z)
+            const isArraySearchMapping = !bracketContent; 
+
+            // if value inside brackets is not a number - it's key based search (x.y[p=1].z)
+            const isKeyBasedMapping = !isArraySearchMapping && isNaN(Number(bracketContent));
+
+            // if not the other two - it must be index search (x.y[0].z)
+            const isIndexBasedMapping = !isArraySearchMapping && !isKeyBasedMapping;
 
             if (isKeyBasedMapping) {
                 const bracketData = bracketContent.split('=');
@@ -108,8 +137,14 @@ class MapProcedureBuilder{
 
                 segmentInfo.setAsArraySearchByKey(key, valueToMatch);
             }
-            else {
+            else if (isKeyBasedMapping){
+                segmentInfo.setAsArraySearch();
+            }
+            else if(isIndexBasedMapping) {
                 segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+            }
+            else{
+                throw "Shouldn't be here"
             }
         }
 
@@ -146,6 +181,10 @@ class MapProcedureBuilder{
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
                     });
+                    break;
+
+                case "ARRAY_SEARCH":
+                    console.log("Not yet implemented")
                     break;
     
                 case "ARRAY_SEARCH_BY_KEY":

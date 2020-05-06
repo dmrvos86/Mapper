@@ -83,9 +83,20 @@ const example6Data = {
   }
 
   const example7Data = {
-    "dateOfBirth": "1986-02-01"
+    "contacts": [
+      {
+        "phone": "xxx-yyyy-zzz"
+      },
+      {
+        "phone": "xxx-yyyy-sss-zzz"
+      }
+    ]
   }
 
   const example8Data = {
+    "dateOfBirth": "1986-02-01"
+  }
+
+  const example9Data = {
     "dynamicData": {"dynamicNumber": 123, "dynamicString": "example"}
   }
