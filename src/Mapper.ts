@@ -76,6 +76,38 @@ class Mapper {
     }
 
     /**
+     * At this time, only thing this preprocessor does is to handle mappings like x.y[].z
+     * Each time mapper is run (get/set), this will transform set mapping to x.y[index].z
+     * It needs to be run each time in case structure changes
+     */
+    private preProcess(): void{
+        // find all elements with x.y[].z structure and copy their value to "map-original attribute"
+        this.parseElements(this.containerElement)
+            .filter(x => x.getAttribute("map").indexOf("[]") > -1)
+            .filter(x => x.getAttribute("map").indexOf("[]") < (x.getAttribute("map").length - 2))
+            .forEach(x => {
+                x.setAttribute("map-original", x.getAttribute("map"));
+            });
+
+        // find all elements with map-original attribute
+        const mapOriginalElements = Array.from(this.containerElement.querySelectorAll("[map-original]"));
+
+        // distinct map-original attributes
+        let mapOriginalAttributes = mapOriginalElements.map(x => x.getAttribute("map-original"));
+        mapOriginalAttributes = [...new Set(mapOriginalAttributes)];
+
+        mapOriginalAttributes.forEach(map => {
+            // for each case, find all elements and generate new map attribute by using map-original and current index
+            const elements = mapOriginalElements.filter(x => x.getAttribute("map-original") === map);
+            
+            elements.forEach((element, index) => {
+                const newMap = map.replace("[]", `[${index}]`)
+                element.setAttribute("map", newMap);
+            })
+        })
+    }
+
+    /**
      * Fetch mapped data from defined container element
      * @param containerElement element which contains mapping elements
      */
@@ -87,6 +119,8 @@ class Mapper {
      * Fetch mapped data from container element defined in constructor
      */
     public getData() {
+        this.preProcess();
+
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
@@ -107,9 +141,12 @@ class Mapper {
                     return lastCreatedObject[step.propertyName];
                 }
             },
-            "ARRAY_ITEM": (_: string, step: MapStep, lastCreatedObject: any[]) => {
-                //key-value search
-                if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
+            "ARRAY_ITEM": (_mapAttribute: string, step: MapStep, lastCreatedObject: any[]) => {
+                const isKeyValueSearch = (step.matchKey !== undefined) && (step.matchValue !== undefined);
+                let isIndexSearch = step.matchIndex >= 0; //x[0].y
+
+                // key-value search
+                if (isKeyValueSearch) {
                     const filteredArray = lastCreatedObject.filter(x => x[step.matchKey] == step.matchValue);
                     if (filteredArray.length > 0) {
                         return filteredArray[0];
@@ -120,14 +157,14 @@ class Mapper {
                         return elementToAdd;
                     }
                 }
-                //index search
-                else if (step.matchIndex >= 0) {
+                // index search
+                else if (isIndexSearch) {
                     lastCreatedObject[step.matchIndex] = lastCreatedObject[step.matchIndex] || step.defaultPropertyValue;
                     return lastCreatedObject[step.matchIndex];
                 }
                 // element value should be mapped
                 else {
-                    throw "Sholdn't be here"
+                    throw "Shouldn't be here (getData)"
                 }
             }
         }
@@ -157,6 +194,8 @@ class Mapper {
      * @param dataToMap data to map from
      */
     public setData(dataToMap: {}) {
+        this.preProcess();
+
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
         const scriptFunctions = {
@@ -185,7 +224,7 @@ class Mapper {
                 // element value should be mapped
                 else {
                     if (step.isLastStep)
-                        throw "Should not be here"
+                        throw "Should not be here (scriptFunctions - ARRAY_ITEM)"
                 }
             }
         }

@@ -1,12 +1,11 @@
 /**
  * Describes every segment in mapping path (in x.y.z path, segments are x, y and z) 
  * ARRAY for x[] - used when value assigned/set is array
- * ARRAY_SEARCH for x[].y 
  * ARRAY_SEARCH_BY_KEY for x[y=1].z
  * ARRAY_SEARCH_BY_INDEX for x[0].z
  * PROPERTY for x.y
  */
-type mapType = "ARRAY" | "ARRAY_SEARCH" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY"
+type mapType = "ARRAY" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY"
 
 /**
  * Parses each segment of mapping path and represents it
@@ -27,13 +26,6 @@ class SegmentInfo{
     public setAsArrayMap(){
         this.mapType = "ARRAY";
         this.mapAsArray = true;
-    }
-
-    /**
-     * Handles cases like x.y[].z
-     */
-    public setAsArraySearch(){
-        this.mapType = "ARRAY_SEARCH";
     }
 
     /**
@@ -59,11 +51,11 @@ class SegmentInfo{
     public validate(){
         const invalidMapping =  
             (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
+            || (this.mapType === "ARRAY" && !this.isLastSegment)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
             || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue))
-            || (this.mapType === "ARRAY_SEARCH" && this.isLastSegment);
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
 
         if (invalidMapping)
             throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
@@ -120,15 +112,9 @@ class MapProcedureBuilder{
         }
         else if (isComplexArrayMap) {
             const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            
-            // if nothing is inside brackets - it's array search (x.y[].z)
-            const isArraySearchMapping = !bracketContent; 
 
             // if value inside brackets is not a number - it's key based search (x.y[p=1].z)
-            const isKeyBasedMapping = !isArraySearchMapping && isNaN(Number(bracketContent));
-
-            // if not the other two - it must be index search (x.y[0].z)
-            const isIndexBasedMapping = !isArraySearchMapping && !isKeyBasedMapping;
+            const isKeyBasedMapping = isNaN(Number(bracketContent));
 
             if (isKeyBasedMapping) {
                 const bracketData = bracketContent.split('=');
@@ -137,14 +123,8 @@ class MapProcedureBuilder{
 
                 segmentInfo.setAsArraySearchByKey(key, valueToMatch);
             }
-            else if (isKeyBasedMapping){
-                segmentInfo.setAsArraySearch();
-            }
-            else if(isIndexBasedMapping) {
+            else {
                 segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
-            }
-            else{
-                throw "Shouldn't be here"
             }
         }
 
@@ -181,10 +161,6 @@ class MapProcedureBuilder{
                         "propertyName": segmentInfo.propertyName,
                         "defaultPropertyValue": []
                     });
-                    break;
-
-                case "ARRAY_SEARCH":
-                    console.log("Not yet implemented")
                     break;
     
                 case "ARRAY_SEARCH_BY_KEY":

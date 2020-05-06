@@ -153,9 +153,6 @@ class SegmentInfo {
         this.mapType = "ARRAY";
         this.mapAsArray = true;
     }
-    setAsArraySearch() {
-        this.mapType = "ARRAY_SEARCH";
-    }
     setAsArraySearchByKey(key, valueToMatch) {
         this.mapType = "ARRAY_SEARCH_BY_KEY";
         this.matchKey = key;
@@ -167,11 +164,11 @@ class SegmentInfo {
     }
     validate() {
         const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
+            || (this.mapType === "ARRAY" && !this.isLastSegment)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
             || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
             || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue))
-            || (this.mapType === "ARRAY_SEARCH" && !this.isLastSegment);
+            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
         if (invalidMapping)
             throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
     }
@@ -193,23 +190,15 @@ class MapProcedureBuilder {
         }
         else if (isComplexArrayMap) {
             const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isArraySearchMapping = !bracketContent;
-            const isKeyBasedMapping = !isArraySearchMapping && isNaN(Number(bracketContent));
-            const isIndexBasedMapping = !isArraySearchMapping && !isKeyBasedMapping;
+            const isKeyBasedMapping = isNaN(Number(bracketContent));
             if (isKeyBasedMapping) {
                 const bracketData = bracketContent.split('=');
                 const key = bracketData[0];
                 const valueToMatch = bracketData[1];
                 segmentInfo.setAsArraySearchByKey(key, valueToMatch);
             }
-            else if (isKeyBasedMapping) {
-                segmentInfo.setAsArraySearch();
-            }
-            else if (isIndexBasedMapping) {
-                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
-            }
             else {
-                throw "Shouldn't be here";
+                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
             }
         }
         segmentInfo.validate();
@@ -313,10 +302,29 @@ class Mapper {
         const parser = this.getElementParser(mapElement);
         return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
     }
+    preProcess() {
+        this.parseElements(this.containerElement)
+            .filter(x => x.getAttribute("map").indexOf("[]") > -1)
+            .filter(x => x.getAttribute("map").indexOf("[]") < (x.getAttribute("map").length - 2))
+            .forEach(x => {
+            x.setAttribute("map-original", x.getAttribute("map"));
+        });
+        const mapOriginalElements = Array.from(this.containerElement.querySelectorAll("[map-original]"));
+        let mapOriginalAttributes = mapOriginalElements.map(x => x.getAttribute("map-original"));
+        mapOriginalAttributes = [...new Set(mapOriginalAttributes)];
+        mapOriginalAttributes.forEach(map => {
+            const elements = mapOriginalElements.filter(x => x.getAttribute("map-original") === map);
+            elements.forEach((element, index) => {
+                const newMap = map.replace("[]", `[${index}]`);
+                element.setAttribute("map", newMap);
+            });
+        });
+    }
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
     }
     getData() {
+        this.preProcess();
         const mappedObject = {};
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
@@ -335,8 +343,10 @@ class Mapper {
                     return lastCreatedObject[step.propertyName];
                 }
             },
-            "ARRAY_ITEM": (_, step, lastCreatedObject) => {
-                if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
+            "ARRAY_ITEM": (_mapAttribute, step, lastCreatedObject) => {
+                const isKeyValueSearch = (step.matchKey !== undefined) && (step.matchValue !== undefined);
+                let isIndexSearch = step.matchIndex >= 0;
+                if (isKeyValueSearch) {
                     const filteredArray = lastCreatedObject.filter(x => x[step.matchKey] == step.matchValue);
                     if (filteredArray.length > 0) {
                         return filteredArray[0];
@@ -347,12 +357,12 @@ class Mapper {
                         return elementToAdd;
                     }
                 }
-                else if (step.matchIndex >= 0) {
+                else if (isIndexSearch) {
                     lastCreatedObject[step.matchIndex] = lastCreatedObject[step.matchIndex] || step.defaultPropertyValue;
                     return lastCreatedObject[step.matchIndex];
                 }
                 else {
-                    throw "Sholdn't be here";
+                    throw "Shouldn't be here (getData)";
                 }
             }
         };
@@ -368,6 +378,7 @@ class Mapper {
         return new Mapper(containerElement).setData(dataToMap);
     }
     setData(dataToMap) {
+        this.preProcess();
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
             "PROPERTY_TRAVERSE": (mapAttribute, step, currentPath) => {
@@ -391,7 +402,7 @@ class Mapper {
                 }
                 else {
                     if (step.isLastStep)
-                        throw "Should not be here";
+                        throw "Should not be here (scriptFunctions - ARRAY_ITEM)";
                 }
             }
         };

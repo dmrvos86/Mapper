@@ -26,7 +26,7 @@ declare class MapAttributeJsonParser extends MapAttributeValueParser {
     getValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement): MapAttributeValueGetResult;
     setValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement, valueToSet: any): boolean;
 }
-declare type mapType = "ARRAY" | "ARRAY_SEARCH" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY";
+declare type mapType = "ARRAY" | "ARRAY_SEARCH_BY_KEY" | "ARRAY_SEARCH_BY_INDEX" | "PROPERTY";
 declare class SegmentInfo {
     propertyName: string;
     constructor(propertyName: string);
@@ -37,7 +37,6 @@ declare class SegmentInfo {
     matchValue: string;
     matchIndex: number;
     setAsArrayMap(): void;
-    setAsArraySearch(): void;
     setAsArraySearchByKey(key: string, valueToMatch: string): void;
     setAsArraySearchByIndex(matchIndex: number): void;
     validate(): void;
@@ -71,6 +70,7 @@ declare class Mapper {
     private getElementParser;
     private getValueByMapAttribute;
     private setValueByMapAttribute;
+    private preProcess;
     static getData(containerElement: HTMLElement): {};
     getData(): {};
     static setData(containerElement: HTMLElement, dataToMap: {}): void;
