@@ -116,6 +116,8 @@ class MapAttributeValueParser {
         return result;
     }
     setValue(mapperConfig, mapElement, containerElement, valueToSet) {
+        if (valueToSet === null || valueToSet === undefined)
+            return false;
         if (mapElement instanceof HTMLInputElement) {
             this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
         }

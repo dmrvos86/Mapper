@@ -181,6 +181,9 @@ class MapAttributeValueParser {
      * @param valueToSet 
      */
     public setValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement, valueToSet: any): boolean {
+        if (valueToSet === null || valueToSet === undefined)
+            return false;
+
         if (mapElement instanceof HTMLInputElement) {
             this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
         }
