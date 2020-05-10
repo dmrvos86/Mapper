@@ -377,9 +377,11 @@ class Mapper {
         return mappedObject;
     }
     static setData(containerElement, dataToMap) {
-        return new Mapper(containerElement).setData(dataToMap);
+        new Mapper(containerElement).setData(dataToMap);
     }
     setData(dataToMap) {
+        if (!dataToMap)
+            return;
         this.preProcess();
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {

@@ -186,7 +186,7 @@ class Mapper {
      * @param dataToMap data to map from
      */
     public static setData(containerElement: HTMLElement, dataToMap: {}) {
-        return new Mapper(containerElement).setData(dataToMap);
+        new Mapper(containerElement).setData(dataToMap);
     }
 
     /**
@@ -194,6 +194,9 @@ class Mapper {
      * @param dataToMap data to map from
      */
     public setData(dataToMap: {}) {
+        if (!dataToMap)
+            return;
+
         this.preProcess();
 
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
