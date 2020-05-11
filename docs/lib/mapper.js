@@ -380,8 +380,10 @@ class Mapper {
         new Mapper(containerElement).setData(dataToMap);
     }
     setData(dataToMap) {
-        if (!dataToMap)
+        if (!(dataToMap instanceof Object))
             return;
+        if (Array.isArray(dataToMap))
+            throw "Direct array mapping is not yet supported";
         this.preProcess();
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
         const scriptFunctions = {
@@ -390,12 +392,14 @@ class Mapper {
                     this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof (Object))
                     return currentPath[step.propertyName];
+                else if (currentPath[step.propertyName] === null || currentPath[step.propertyName] === undefined)
+                    return;
                 else
-                    throw "invalid";
+                    throw "Mapper - Invalid mapping on: " + mapAttribute;
             },
-            "ARRAY_ITEM": (_, step, currentPath) => {
+            "ARRAY_ITEM": (mapAttribute, step, currentPath) => {
                 if (!Array.isArray(currentPath))
-                    throw "Invalid";
+                    throw "Mapper - Invalid array mapping on: " + mapAttribute;
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filtered = currentPath.filter(x => x[step.matchKey] == step.matchValue);
                     if (filtered.length > 0)

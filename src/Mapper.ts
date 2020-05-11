@@ -194,8 +194,11 @@ class Mapper {
      * @param dataToMap data to map from
      */
     public setData(dataToMap: {}) {
-        if (!dataToMap)
+        if (!(dataToMap instanceof Object))
             return;
+
+        if (Array.isArray(dataToMap))
+            throw "Direct array mapping is not yet supported"
 
         this.preProcess();
 
@@ -207,12 +210,16 @@ class Mapper {
                     this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof (Object)) //if element value should be mapped
                     return currentPath[step.propertyName];
+                
+                // if path segment is missing - skip it
+                else if (currentPath[step.propertyName] === null || currentPath[step.propertyName] === undefined)
+                    return
                 else
-                    throw "invalid"
+                    throw "Mapper - Invalid mapping on: " + mapAttribute;
             },
-            "ARRAY_ITEM": (_: string, step: MapStep, currentPath: any[]) => {
+            "ARRAY_ITEM": (mapAttribute: string, step: MapStep, currentPath: any[]) => {
                 if (!Array.isArray(currentPath))
-                    throw "Invalid"
+                throw "Mapper - Invalid array mapping on: " + mapAttribute;
 
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filtered = currentPath.filter(x => x[step.matchKey] == step.matchValue)
