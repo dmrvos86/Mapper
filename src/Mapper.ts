@@ -108,6 +108,51 @@ class Mapper {
     }
 
     /**
+     * In case of simple forms, 'map' attributes can be initialized from name attributes.
+     * This function sets map attribute to all input, select and textarea elements and returns Mapper instance
+     * @param containerElement container element
+     * @returns Mapper instance
+     */
+    public static initializeMapperByElementsName(containerElement: HTMLElement): Mapper{
+        // find all elements without map attribute and with defined name attribute
+        const elementsToCheck = Array
+        .from(containerElement.querySelectorAll("input,select,textarea"))
+        .filter(element => {
+            const attributes = Array.from(element.attributes)
+            const mapAttributeCount = attributes
+                .filter(attribute => attribute.name.startsWith("map"))
+                .length;
+
+            const hasMapAttribute = mapAttributeCount > 0;
+
+            const hasNameAttribute = attributes
+                .filter(x => x.name === "name") // has name attribute
+                .filter(x => x.value.length > 0) // name attribute defined
+                .length > 0;
+
+            return !hasMapAttribute && hasNameAttribute;
+        });
+
+        elementsToCheck.forEach((element) => {
+            const elementName = element.getAttribute("name");
+            let mapName = elementName[0].toLowerCase() + elementName.slice(1); //camelCase
+
+            // if more than one element with same name exists
+            // map it as array
+            const sameNameCount = elementsToCheck
+                .filter(el => el.getAttribute("name") === elementName)
+                .length;
+
+            if (sameNameCount > 1)
+                mapName += "[]";
+
+            element.setAttribute("map", mapName);
+        })
+
+        return new Mapper(containerElement);
+    }
+
+    /**
      * Fetch mapped data from defined container element
      * @param containerElement element which contains mapping elements
      */

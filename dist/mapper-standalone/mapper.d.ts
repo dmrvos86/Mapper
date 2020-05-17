@@ -71,6 +71,7 @@ declare class Mapper {
     private getValueByMapAttribute;
     private setValueByMapAttribute;
     private preProcess;
+    static initializeMapperByElementsName(containerElement: HTMLElement): Mapper;
     static getData(containerElement: HTMLElement): {};
     getData(): {};
     static setData(containerElement: HTMLElement, dataToMap: {}): void;

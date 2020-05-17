@@ -96,7 +96,25 @@ HTML
 
 Procedure is same as above, just instead of assigning values to object - values are assigned to DomElements.
 
-### Custom mappers
+### Static methods
+
+#### `initializeMapperByElementsName`
+- input: `containerElement` - any HTMLElement which containes other elements
+- returns:  Mapper instance
+
+In case of simple forms, this method will add required map attributes to all elements inside `containerElement`. Map attributes will be defined as element's name. E.g.: `<input name="FirstName" />` will after running this method look like `<input name="FirstName" map='firstName'/>`.
+
+#### `getData`
+- input: `containerElement`
+- returns: Object containing mapped data
+
+Instead of creating Mapper instance to get data, this method can be used. It will make new Mapper instance and return mapped data.
+
+#### `setData`
+- input: `containerElement` 
+- input: `dataToMap` - object containing data to map
+
+Instead of creating Mapper instance to set data, this method can be used. It will make new Mapper instance and set data contained in `dataToMap` object.
 
 ### Author
 

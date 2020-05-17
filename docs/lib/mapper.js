@@ -322,6 +322,33 @@ class Mapper {
             });
         });
     }
+    static initializeMapperByElementsName(containerElement) {
+        const elementsToCheck = Array
+            .from(containerElement.querySelectorAll("input,select,textarea"))
+            .filter(element => {
+            const attributes = Array.from(element.attributes);
+            const mapAttributeCount = attributes
+                .filter(attribute => attribute.name.startsWith("map"))
+                .length;
+            const hasMapAttribute = mapAttributeCount > 0;
+            const hasNameAttribute = attributes
+                .filter(x => x.name === "name")
+                .filter(x => x.value.length > 0)
+                .length > 0;
+            return !hasMapAttribute && hasNameAttribute;
+        });
+        elementsToCheck.forEach((element) => {
+            const elementName = element.getAttribute("name");
+            let mapName = elementName[0].toLowerCase() + elementName.slice(1);
+            const sameNameCount = elementsToCheck
+                .filter(el => el.getAttribute("name") === elementName)
+                .length;
+            if (sameNameCount > 1)
+                mapName += "[]";
+            element.setAttribute("map", mapName);
+        });
+        return new Mapper(containerElement);
+    }
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
     }
