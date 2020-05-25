@@ -69,10 +69,17 @@ class Mapper {
      * @param mapAttribute map-attribute to process
      * @param valueToSet value to map
      */
-    private setValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string, valueToSet: any) {
+    private setValueByMapAttribute(containerElement: HTMLElement, mapAttribute: string, valueToSet: any): void {
         const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
         const parser = this.getElementParser(mapElement);
-        return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
+        Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
+
+        // it's enough to trigger event on first element since this feature is primarily used
+        // for select and input (text, number) elements which should contain single element per 
+        // mapping, unlike radios and checkboxes.
+        if (this.configuration.triggerChangeOnSet){
+            mapElement.dispatchEvent(new Event('change'));
+        }
     }
 
     /**

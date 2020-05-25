@@ -23,9 +23,6 @@ class MapAttributeValueParser {
             el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
         else
             el.value = valueToSet;
-        if (mapperConfig.triggerChangeOnSet) {
-            el.dispatchEvent(new Event('change'));
-        }
     }
     parseHtmlTextAreaValue(mapperConfig, element) {
         const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
@@ -302,7 +299,10 @@ class Mapper {
     setValueByMapAttribute(containerElement, mapAttribute, valueToSet) {
         const mapElement = this.getFirstElementByMapAttribute(containerElement, mapAttribute);
         const parser = this.getElementParser(mapElement);
-        return Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
+        Mapper.elementValueParsers[parser].setValue(this.configuration, mapElement, containerElement, valueToSet);
+        if (this.configuration.triggerChangeOnSet) {
+            mapElement.dispatchEvent(new Event('change'));
+        }
     }
     preProcess() {
         this.parseElements(this.containerElement)

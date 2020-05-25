@@ -30,10 +30,6 @@ class MapAttributeValueParser {
             el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
         else
             el.value = valueToSet;
-
-        if (mapperConfig.triggerChangeOnSet){
-            el.dispatchEvent(new Event('change'));
-        }
     }
 
     /**
