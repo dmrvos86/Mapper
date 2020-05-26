@@ -56,7 +56,7 @@ class MapAttributeValueParser {
             case "radio":
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
-                const elements = containerElement.querySelectorAll(querySelector);
+                const elements = Array.from(containerElement.querySelectorAll(querySelector));
                 const elementsChecked = Array
                     .from(elements)
                     .filter(x => x.checked === true);
@@ -66,8 +66,24 @@ class MapAttributeValueParser {
                     else if (elementsChecked.length > 1)
                         throw `For radio with mapping ${mapAttribute}, more than one selected value exists`;
                 }
-                if (element.type === "checkbox")
-                    returnValue = elementsChecked.map(x => x.value || true);
+                if (element.type === "checkbox") {
+                    const haveValueAttributes = elements
+                        .filter(x => x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                        .length > 0;
+                    let arrayToParse = [];
+                    if (haveValueAttributes)
+                        arrayToParse = arrayToParse.concat(elementsChecked);
+                    else
+                        arrayToParse = arrayToParse.concat(elements);
+                    returnValue = arrayToParse.map(elMap => {
+                        if (haveValueAttributes) {
+                            return elMap.getAttribute(mapperConfig.dataValueAttributeToUseForGet) || elMap.value;
+                        }
+                        else {
+                            return elMap.checked;
+                        }
+                    });
+                }
                 break;
             default:
                 break;
@@ -81,11 +97,15 @@ class MapAttributeValueParser {
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll(querySelector));
-                if (!Array.isArray(valueToSet))
+                if (!Array.isArray(valueToSet)) {
                     valueToSet = [valueToSet];
+                }
                 elements
-                    .forEach(x => {
-                    const elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                    .forEach((x) => {
+                    let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                    if (!(x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))) {
+                        elementValue = elementValue === "on";
+                    }
                     x.checked = valueToSet.indexOf(elementValue) > -1;
                 });
                 break;

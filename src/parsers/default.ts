@@ -90,7 +90,7 @@ class MapAttributeValueParser {
             case "radio":
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
-                const elements = containerElement.querySelectorAll<HTMLInputElement>(querySelector);
+                const elements = Array.from(containerElement.querySelectorAll<HTMLInputElement>(querySelector));
 
                 const elementsChecked = Array
                     .from(elements)
@@ -103,8 +103,32 @@ class MapAttributeValueParser {
                         throw `For radio with mapping ${mapAttribute}, more than one selected value exists`
                 }
 
-                if (element.type === "checkbox")
-                    returnValue = elementsChecked.map(x => x.value || true);
+                if (element.type === "checkbox"){
+                    // if no value/data-value attribute is specified, all values must be returned
+                    // there is no point in having arrays as [true, true]
+                    // However, this is usefull when having single checkbox with same map attribute
+                    const haveValueAttributes = elements
+                        .filter(x => x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                        .length > 0;
+
+                    // if value attributes are defined, use checked array, otherwise full aray
+                    let arrayToParse: any[] = [];
+
+                    if (haveValueAttributes)
+                        arrayToParse = arrayToParse.concat(elementsChecked);
+                    else 
+                        arrayToParse = arrayToParse.concat(elements);
+
+                    // instead of returning on/off, map value or true/false
+                    returnValue = arrayToParse.map(elMap => {
+                        if (haveValueAttributes){
+                            return elMap.getAttribute(mapperConfig.dataValueAttributeToUseForGet) || elMap.value;
+                        }
+                        else {
+                            return elMap.checked;
+                        }
+                    });
+                }
 
                 break;
 
@@ -124,12 +148,20 @@ class MapAttributeValueParser {
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll<HTMLInputElement>(querySelector));
 
-                if (!Array.isArray(valueToSet))
+                if (!Array.isArray(valueToSet)){
                     valueToSet = [valueToSet];
+                }
 
                 elements
-                    .forEach(x => {
-                        const elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                    .forEach((x) => {
+                        let elementValue: string | boolean = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+
+                        // this will be used by single mappings (one mapping for one checkbox). ON/OFF values don't make any sense and need
+                        // to be converted to boolean
+                        if (!(x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))){
+                            elementValue =  elementValue === "on";
+                        }
+
                         x.checked = valueToSet.indexOf(elementValue) > -1;
                     });
 
