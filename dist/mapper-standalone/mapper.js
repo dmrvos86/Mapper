@@ -97,19 +97,18 @@ class MapAttributeValueParser {
                 const mapAttribute = element.getAttribute("map");
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll(querySelector));
-                if (!Array.isArray(valueToSet)) {
+                if (typeof (valueToSet) === "boolean") {
+                    elements.forEach(x => x.checked = valueToSet);
+                }
+                else if (!Array.isArray(valueToSet)) {
                     valueToSet = [valueToSet];
                 }
-                elements
-                    .forEach((x) => {
-                    let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
-                    const valueDefined = x.hasAttribute("value") && x.getAttribute("value");
-                    const dataValueDefined = mapperConfig.dataValueAttributeToUseForSet && x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet);
-                    if (!valueDefined && !dataValueDefined) {
-                        elementValue = elementValue === "on";
-                    }
-                    x.checked = valueToSet.indexOf(elementValue) > -1;
-                });
+                if (Array.isArray(valueToSet)) {
+                    elements.forEach((x) => {
+                        let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                        x.checked = valueToSet.indexOf(elementValue) > -1;
+                    });
+                }
                 break;
             default:
                 this.setElementValueOrDataValueAttribute(mapperConfig, element, valueToSet);

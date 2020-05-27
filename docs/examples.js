@@ -3,7 +3,8 @@ const example1Data = {
     "lastName": "Cooper",
     "age": 42,
     "userType": "Admin",
-    "hasVerifiedEmail": true
+    "hasVerifiedEmail": true,
+    "locked": false
 }
 
 const example2Data = {

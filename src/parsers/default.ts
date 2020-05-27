@@ -149,25 +149,22 @@ class MapAttributeValueParser {
                 const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
                 const elements = Array.from(containerElement.querySelectorAll<HTMLInputElement>(querySelector));
 
-                if (!Array.isArray(valueToSet)){
+                // in case boolean value is provided, map it to all mapped elements
+                if (typeof(valueToSet) === "boolean"){
+                    elements.forEach(x => x.checked = valueToSet);
+                }
+                // if not boolean (e.g. string) - transform it to array
+                else if (!Array.isArray(valueToSet)){
                     valueToSet = [valueToSet];
                 }
 
-                elements
-                    .forEach((x) => {
+                // flag element as checked if it's value is found in array
+                if (Array.isArray(valueToSet)){
+                    elements.forEach((x) => {
                         let elementValue: string | boolean = this.getElementValueOrDataValueAttribute(mapperConfig, x);
-
-                        // this will be used by single mappings (one mapping for one checkbox). ON/OFF values don't make any sense and need
-                        // to be converted to boolean
-                        const valueDefined = x.hasAttribute("value") && x.getAttribute("value");
-                        const dataValueDefined = mapperConfig.dataValueAttributeToUseForSet && x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet);
-                        if (!valueDefined && !dataValueDefined){
-                            elementValue = elementValue === "on";
-                        }
-
                         x.checked = valueToSet.indexOf(elementValue) > -1;
                     });
-
+                }
                 break;
 
             default:
