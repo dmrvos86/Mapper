@@ -68,7 +68,7 @@ class MapAttributeValueParser {
                 }
                 if (element.type === "checkbox") {
                     const haveValueAttributes = elements
-                        .filter(x => x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                        .filter(x => (x.hasAttribute("value") && x.getAttribute("value")) || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
                         .length > 0;
                     let arrayToParse = [];
                     if (haveValueAttributes)
@@ -103,7 +103,9 @@ class MapAttributeValueParser {
                 elements
                     .forEach((x) => {
                     let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
-                    if (!(x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))) {
+                    const valueDefined = x.hasAttribute("value") && x.getAttribute("value");
+                    const dataValueDefined = mapperConfig.dataValueAttributeToUseForSet && x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet);
+                    if (!valueDefined && !dataValueDefined) {
                         elementValue = elementValue === "on";
                     }
                     x.checked = valueToSet.indexOf(elementValue) > -1;

@@ -107,8 +107,9 @@ class MapAttributeValueParser {
                     // if no value/data-value attribute is specified, all values must be returned
                     // there is no point in having arrays as [true, true]
                     // However, this is usefull when having single checkbox with same map attribute
+                    // empty value attribute is also taken into account
                     const haveValueAttributes = elements
-                        .filter(x => x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                        .filter(x => (x.hasAttribute("value") && x.getAttribute("value")) || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
                         .length > 0;
 
                     // if value attributes are defined, use checked array, otherwise full aray
@@ -158,8 +159,10 @@ class MapAttributeValueParser {
 
                         // this will be used by single mappings (one mapping for one checkbox). ON/OFF values don't make any sense and need
                         // to be converted to boolean
-                        if (!(x.hasAttribute("value") || x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))){
-                            elementValue =  elementValue === "on";
+                        const valueDefined = x.hasAttribute("value") && x.getAttribute("value");
+                        const dataValueDefined = mapperConfig.dataValueAttributeToUseForSet && x.hasAttribute(mapperConfig.dataValueAttributeToUseForSet);
+                        if (!valueDefined && !dataValueDefined){
+                            elementValue = elementValue === "on";
                         }
 
                         x.checked = valueToSet.indexOf(elementValue) > -1;
