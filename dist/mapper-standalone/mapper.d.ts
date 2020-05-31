@@ -11,7 +11,7 @@ declare class MapAttributeValueGetResult {
 }
 declare class MapAttributeValueParser {
     constructor();
-    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): string;
+    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLOptionElement): string;
     protected setElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, valueToSet: string): void;
     private parseHtmlTextAreaValue;
     private parseHtmlSelectValue;

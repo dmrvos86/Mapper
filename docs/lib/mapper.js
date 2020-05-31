@@ -31,9 +31,10 @@ class MapAttributeValueParser {
     parseHtmlSelectValue(mapperConfig, element) {
         let returnValue;
         const selectedValues = Array
-            .from(element.selectedOptions)
+            .from(element.options)
+            .filter(x => x.selected)
             .map(x => {
-            let value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+            let value = this.getElementValueOrDataValueAttribute(mapperConfig, x);
             if (value === null || value === undefined)
                 value = x.text;
             return value;

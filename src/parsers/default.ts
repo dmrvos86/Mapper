@@ -18,7 +18,7 @@ class MapAttributeValueParser {
 
     }
 
-    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
+    protected getElementValueOrDataValueAttribute(mapperConfig: MapperConfiguration, el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLOptionElement) {
         if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
             return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
 
@@ -50,9 +50,10 @@ class MapAttributeValueParser {
     private parseHtmlSelectValue(mapperConfig: MapperConfiguration, element: HTMLSelectElement): MapAttributeValueGetResult {
         let returnValue;
         const selectedValues = Array
-            .from(element.selectedOptions)
+            .from(element.options)
+            .filter(x => x.selected)
             .map(x => {
-                let value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+                let value = this.getElementValueOrDataValueAttribute(mapperConfig, x);
                 if (value === null || value === undefined)
                     value = x.text;
 
