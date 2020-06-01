@@ -25,7 +25,8 @@ const example3Data = {
       "pwruser"
     ],
     "consents": [
-      "data-processing"
+      "data-processing",
+      "data-sharing"
     ]
   }
 

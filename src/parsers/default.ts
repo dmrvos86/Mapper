@@ -216,8 +216,19 @@ class MapAttributeValueParser {
         if (mapElement instanceof HTMLInputElement) {
             this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
         }
+        else if (mapElement instanceof HTMLSelectElement){
+            if (!Array.isArray(valueToSet))
+                valueToSet = [valueToSet];
+
+            valueToSet = valueToSet.map((x: any) => x.toString());
+
+            Array.from(mapElement.options)
+                .forEach(opt => {
+                    opt.selected = valueToSet.indexOf(this.getElementValueOrDataValueAttribute(mapperConfig, opt)) >= 0;
+                })
+        }
         else {
-            (mapElement as HTMLSelectElement | HTMLTextAreaElement).value = valueToSet;
+            (mapElement as HTMLTextAreaElement).value = valueToSet;
         }
 
         return true;
