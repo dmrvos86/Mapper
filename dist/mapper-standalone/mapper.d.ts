@@ -60,6 +60,7 @@ declare class MapProcedureBuilder {
     private static getSegmentPathInfo;
     static buildMapProcedureSteps(mapProperty: string): MapAttributeSteps;
 }
+declare function jsonToFormData(jsonObject: Object): FormData;
 declare class Mapper {
     private containerElement;
     private static elementValueParsers;
@@ -73,7 +74,9 @@ declare class Mapper {
     private preProcess;
     static initializeMapperByElementsName(containerElement: HTMLElement): Mapper;
     static getData(containerElement: HTMLElement): {};
+    static getFormData(containerElement: HTMLElement): FormData;
     getData(): {};
+    getFormData(): FormData;
     static setData(containerElement: HTMLElement, dataToMap: {}): void;
     setData(dataToMap: {}): void;
     private getMapAttributesByElement;

@@ -53,6 +53,9 @@ class MapAttributeValueParser {
             case "number":
                 returnValue = returnValue * 1;
                 break;
+            case "file":
+                returnValue = element.multiple ? element.files : element.files.item(0);
+                break;
             case "checkbox":
             case "radio":
                 const mapAttribute = element.getAttribute("map");
@@ -146,7 +149,7 @@ class MapAttributeValueParser {
             valueToSet = valueToSet.map((x) => x.toString());
             Array.from(mapElement.options)
                 .forEach(opt => {
-                opt.selected = valueToSet.indexOf(opt.value) >= 0;
+                opt.selected = valueToSet.indexOf(this.getElementValueOrDataValueAttribute(mapperConfig, opt)) >= 0;
             });
         }
         else {
@@ -303,6 +306,31 @@ class MapProcedureBuilder {
         };
     }
 }
+function jsonToFormData(jsonObject) {
+    const formData = new FormData();
+    const appendToFormData = (json, prefixKey) => {
+        for (let jsonKey of Object.keys(json)) {
+            const jsonProperty = json[jsonKey];
+            if (jsonProperty instanceof File) {
+                formData.append(jsonKey, jsonProperty);
+            }
+            else if (jsonProperty instanceof Object) {
+                let newPrefix = `[${jsonKey}]`;
+                if (prefixKey)
+                    newPrefix = `${prefixKey}${newPrefix}`;
+                appendToFormData(jsonProperty, newPrefix);
+            }
+            else {
+                let key = jsonKey;
+                if (prefixKey)
+                    key = `${prefixKey}.${jsonKey}`;
+                formData.append(key, jsonProperty);
+            }
+        }
+    };
+    appendToFormData(jsonObject);
+    return formData;
+}
 class Mapper {
     constructor(containerElement, configuration) {
         this.containerElement = containerElement;
@@ -383,6 +411,9 @@ class Mapper {
     static getData(containerElement) {
         return new Mapper(containerElement).getData();
     }
+    static getFormData(containerElement) {
+        return new Mapper(containerElement).getFormData();
+    }
     getData() {
         this.preProcess();
         const mappedObject = {};
@@ -433,6 +464,10 @@ class Mapper {
             });
         });
         return mappedObject;
+    }
+    getFormData() {
+        const data = this.getData();
+        return jsonToFormData(data);
     }
     static setData(containerElement, dataToMap) {
         new Mapper(containerElement).setData(dataToMap);

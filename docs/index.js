@@ -38,3 +38,14 @@ runExample(6, example6Data);
 runExample(7, example7Data);
 runExample(8, example8Data);
 runExample(9, example9Data);
+
+const btn10Get = document.getElementById(`btnExample10Get`);
+btn10Get.addEventListener("click", () => {
+    const form = document.getElementById(`formExample10`);
+    const formData = Mapper.getFormData(form);
+
+    let data = [];
+    for (let entry of formData.entries()) data.push(entry)
+
+    document.getElementById("txtExample10").innerHTML = data.join("\r\n");
+})

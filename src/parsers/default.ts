@@ -84,6 +84,10 @@ class MapAttributeValueParser {
                 returnValue = returnValue * 1; //fastest way to convert
                 break;
 
+            case "file":
+                returnValue = element.multiple ? element.files : element.files.item(0);
+                break;
+
             // find all input elements with same map attribute
             // checkbox should return array of values
             // radio shoud return single value

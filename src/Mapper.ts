@@ -2,6 +2,7 @@
 /// <reference path="./parsers/default.ts" />
 /// <reference path="./parsers/json.ts" />
 /// <reference path="./utils/map-procedure-builder.ts" />
+/// <reference path="./utils/json-to-form-data.ts" />
 
 /**
  * Mapper can be used either as an instance for provided container element, or by ad-hoc using static getData/setData methods on provided element
@@ -168,6 +169,14 @@ class Mapper {
     }
 
     /**
+     * Fetch mapped data from defined container element as FormData
+     * @param containerElement element which contains mapping elements
+     */
+    public static getFormData(containerElement: HTMLElement) {
+        return new Mapper(containerElement).getFormData();
+    }
+
+    /**
      * Fetch mapped data from container element defined in constructor
      */
     public getData() {
@@ -230,6 +239,14 @@ class Mapper {
         })
 
         return mappedObject;
+    }
+
+    /**
+     * Fetch mapped data as FormData
+     */
+    public getFormData() {
+        const data = this.getData();
+        return jsonToFormData(data);
     }
 
     /**
