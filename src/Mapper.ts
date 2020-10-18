@@ -11,9 +11,9 @@ class Mapper {
     /**
      * All available parsers - both default or added later
      */
-    private static elementValueParsers: { [key: string]: MapAttributeValueParser } = {
-        "default": new MapAttributeValueParser(),
-        "json": new MapAttributeJsonParser()
+    public static elementValueParsers: { [key: string]: MapperLib.MapAttributeValueParser } = {
+        "default": new MapperLib.MapAttributeValueParser(),
+        "json": new MapperLib.MapAttributeJsonParser()
     }
 
     /**
@@ -21,23 +21,14 @@ class Mapper {
      * @param containerElement element which contains mapping elements, usually div or form element
      * @param configuration optional configuration to use
      */
-    constructor(private containerElement: HTMLElement, configuration?: MapperConfiguration) {
+    constructor(private containerElement: HTMLElement, configuration?: MapperLib.MapperConfiguration) {
         Object.assign(this.configuration, configuration || {});
     }
 
-    public configuration: MapperConfiguration = {
+    public configuration: MapperLib.MapperConfiguration = {
         "dataValueAttributeToUseForGet": "data-value",
         "dataValueAttributeToUseForSet": "",
         "triggerChangeOnSet": true
-    }
-
-    /**
-     * Add new parser, used as map-parser="parser_name". If map-parser attribute is missing, default parser is used
-     * @param name parser name
-     * @param valueParser parser implementation
-     */
-    public static AddMapper(name: string, valueParser: MapAttributeValueParser) {
-        Mapper.elementValueParsers[name] = valueParser;
     }
 
     /**
@@ -78,7 +69,7 @@ class Mapper {
         // it's enough to trigger event on first element since this feature is primarily used
         // for select and input (text, number) elements which should contain single element per 
         // mapping, unlike radios and checkboxes.
-        if (this.configuration.triggerChangeOnSet){
+        if (this.configuration.triggerChangeOnSet) {
             mapElement.dispatchEvent(new Event('change'));
         }
     }
@@ -88,7 +79,7 @@ class Mapper {
      * Each time mapper is run (get/set), this will transform set mapping to x.y[index].z
      * It needs to be run each time in case structure changes
      */
-    private preProcess(): void{
+    private preProcess(): void {
         // find all elements with x.y[].z structure and copy their value to "map-original attribute"
         this.parseElements(this.containerElement)
             .filter(x => x.getAttribute("map").indexOf("[]") > -1)
@@ -107,73 +98,12 @@ class Mapper {
         mapOriginalAttributes.forEach(map => {
             // for each case, find all elements and generate new map attribute by using map-original and current index
             const elements = mapOriginalElements.filter(x => x.getAttribute("map-original") === map);
-            
+
             elements.forEach((element, index) => {
                 const newMap = map.replace("[]", `[${index}]`)
                 element.setAttribute("map", newMap);
             })
         })
-    }
-
-    /**
-     * In case of simple forms, 'map' attributes can be initialized from name attributes.
-     * This function sets map attribute to all input, select and textarea elements and returns Mapper instance
-     * @param containerElement container element
-     * @returns Mapper instance
-     */
-    public static initializeMapperByElementsName(containerElement: HTMLElement): Mapper{
-        // find all elements without map attribute and with defined name attribute
-        const elementsToCheck = Array
-        .from(containerElement.querySelectorAll("input,select,textarea"))
-        .filter(element => {
-            const attributes = Array.from(element.attributes)
-            const mapAttributeCount = attributes
-                .filter(attribute => attribute.name.startsWith("map"))
-                .length;
-
-            const hasMapAttribute = mapAttributeCount > 0;
-
-            const hasNameAttribute = attributes
-                .filter(x => x.name === "name") // has name attribute
-                .filter(x => x.value.length > 0) // name attribute defined
-                .length > 0;
-
-            return !hasMapAttribute && hasNameAttribute;
-        });
-
-        elementsToCheck.forEach((element) => {
-            const elementName = element.getAttribute("name");
-            let mapName = elementName[0].toLowerCase() + elementName.slice(1); //camelCase
-
-            // if more than one element with same name exists
-            // map it as array
-            const sameNameCount = elementsToCheck
-                .filter(el => el.getAttribute("name") === elementName)
-                .length;
-
-            if (sameNameCount > 1)
-                mapName += "[]";
-
-            element.setAttribute("map", mapName);
-        })
-
-        return new Mapper(containerElement);
-    }
-
-    /**
-     * Fetch mapped data from defined container element
-     * @param containerElement element which contains mapping elements
-     */
-    public static getData(containerElement: HTMLElement) {
-        return new Mapper(containerElement).getData();
-    }
-
-    /**
-     * Fetch mapped data from defined container element as FormData
-     * @param containerElement element which contains mapping elements
-     */
-    public static getFormData(containerElement: HTMLElement) {
-        return new Mapper(containerElement).getFormData();
     }
 
     /**
@@ -186,7 +116,7 @@ class Mapper {
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
         const scriptFunctions = {
-            "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapStep, lastCreatedObject: any) => {
+            "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapperLib.MapStep, lastCreatedObject: any) => {
                 if (step.isLastStep) { //if element value should be mapped
                     var elementValue = this.getValueByMapAttribute(this.containerElement, mapAttribute);
 
@@ -202,7 +132,7 @@ class Mapper {
                     return lastCreatedObject[step.propertyName];
                 }
             },
-            "ARRAY_ITEM": (_mapAttribute: string, step: MapStep, lastCreatedObject: any[]) => {
+            "ARRAY_ITEM": (_mapAttribute: string, step: MapperLib.MapStep, lastCreatedObject: any[]) => {
                 const isKeyValueSearch = (step.matchKey !== undefined) && (step.matchValue !== undefined);
                 let isIndexSearch = step.matchIndex >= 0; //x[0].y
 
@@ -246,16 +176,7 @@ class Mapper {
      */
     public getFormData() {
         const data = this.getData();
-        return jsonToFormData(data);
-    }
-
-    /**
-     * Set data to defined container element
-     * @param containerElement container element
-     * @param dataToMap data to map from
-     */
-    public static setData(containerElement: HTMLElement, dataToMap: {}) {
-        new Mapper(containerElement).setData(dataToMap);
+        return MapperLib.jsonToFormData(data);
     }
 
     /**
@@ -274,21 +195,21 @@ class Mapper {
         const steps = this.buildMapProcedureStepsForAllElements(this.containerElement);
 
         const scriptFunctions = {
-            "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapStep, currentPath: any) => {
+            "PROPERTY_TRAVERSE": (mapAttribute: string, step: MapperLib.MapStep, currentPath: any) => {
                 if (step.isLastStep)
                     this.setValueByMapAttribute(this.containerElement, mapAttribute, currentPath[step.propertyName]);
                 else if (currentPath[step.propertyName] instanceof (Object)) //if element value should be mapped
                     return currentPath[step.propertyName];
-                
+
                 // if path segment is missing - skip it
                 else if (currentPath[step.propertyName] === null || currentPath[step.propertyName] === undefined)
                     return
                 else
                     throw "Mapper - Invalid mapping on: " + mapAttribute;
             },
-            "ARRAY_ITEM": (mapAttribute: string, step: MapStep, currentPath: any[]) => {
+            "ARRAY_ITEM": (mapAttribute: string, step: MapperLib.MapStep, currentPath: any[]) => {
                 if (!Array.isArray(currentPath))
-                throw "Mapper - Invalid array mapping on: " + mapAttribute;
+                    throw "Mapper - Invalid array mapping on: " + mapAttribute;
 
                 if ((step.matchKey !== undefined) && (step.matchValue !== undefined)) {
                     const filtered = currentPath.filter(x => x[step.matchKey] == step.matchValue)
@@ -341,7 +262,7 @@ class Mapper {
     }
 
 
-    private buildMapProcedureStepsForAllElements(containerElement: HTMLElement): MapAttributeSteps[] {
+    private buildMapProcedureStepsForAllElements(containerElement: HTMLElement): MapperLib.MapAttributeSteps[] {
         const allMapAttributes = this
             .parseElements(containerElement)
             .map(x => x.getAttribute("map"));
@@ -349,7 +270,86 @@ class Mapper {
         const uniqueMapAttributes = [...new Set(allMapAttributes)];
 
         return uniqueMapAttributes.map(x => {
-            return MapProcedureBuilder.buildMapProcedureSteps(x);
+            return MapperLib.MapProcedureBuilder.buildMapProcedureSteps(x);
         });
+    }
+
+    /**
+     * In case of simple forms, 'map' attributes can be initialized from name attributes.
+     * This function sets map attribute to all input, select and textarea elements and returns Mapper instance
+     * @param containerElement container element
+     * @returns Mapper instance
+     */
+    public static initializeMapperByElementsName(containerElement: HTMLElement): Mapper {
+        // find all elements without map attribute and with defined name attribute
+        const elementsToCheck = Array
+            .from(containerElement.querySelectorAll("input,select,textarea"))
+            .filter(element => {
+                const attributes = Array.from(element.attributes)
+                const mapAttributeCount = attributes
+                    .filter(attribute => attribute.name.startsWith("map"))
+                    .length;
+
+                const hasMapAttribute = mapAttributeCount > 0;
+
+                const hasNameAttribute = attributes
+                    .filter(x => x.name === "name") // has name attribute
+                    .filter(x => x.value.length > 0) // name attribute defined
+                    .length > 0;
+
+                return !hasMapAttribute && hasNameAttribute;
+            });
+
+        elementsToCheck.forEach((element) => {
+            const elementName = element.getAttribute("name");
+            let mapName = elementName[0].toLowerCase() + elementName.slice(1); //camelCase
+
+            // if more than one element with same name exists
+            // map it as array
+            const sameNameCount = elementsToCheck
+                .filter(el => el.getAttribute("name") === elementName)
+                .length;
+
+            if (sameNameCount > 1)
+                mapName += "[]";
+
+            element.setAttribute("map", mapName);
+        })
+
+        return new Mapper(containerElement);
+    }
+
+    /**
+     * Fetch mapped data from defined container element
+     * @param containerElement element which contains mapping elements
+     */
+    public static getData(containerElement: HTMLElement) {
+        return new Mapper(containerElement).getData();
+    }
+
+    /**
+     * Fetch mapped data from defined container element as FormData
+     * @param containerElement element which contains mapping elements
+     */
+    public static getFormData(containerElement: HTMLElement) {
+        return new Mapper(containerElement).getFormData();
+    }
+
+    /**
+     * Set data to defined container element
+     * @param containerElement container element
+     * @param dataToMap data to map from
+     */
+    public static setData(containerElement: HTMLElement, dataToMap: {}) {
+        new Mapper(containerElement).setData(dataToMap);
+    }
+
+    /**
+     * Add new parser, used as map-parser="parser_name". If map-parser attribute is missing, default parser is used
+     * @param name parser name
+     * @param valueParser parser implementation
+     */
+    public static AddMapper(name: string, valueParser: MapperLib.MapAttributeValueParser) {
+        Mapper.elementValueParsers[name] = valueParser;
     }
 }

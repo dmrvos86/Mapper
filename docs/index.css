@@ -1,19 +1,19 @@
-body{
-    background-color: rgba(0,0,0,.025)!important;
+body {
+    background-color: rgba(0,0,0,.025) !important;
     padding-top: 80px;
 }
 
-code.code-block{
+code.code-block {
     display: block;
-    padding:10px;
+    padding: 10px;
     padding-left: 25px;
 }
 
-h2{
-    margin-top: 25px!important;
+h2 {
+    margin-top: 25px !important;
 }
 
-nav.navbar-fixed-top{
+nav.navbar-fixed-top {
     top: 0;
     border-width: 0 0 1px;
     position: fixed;
@@ -22,78 +22,78 @@ nav.navbar-fixed-top{
     z-index: 1030;
 }
 
-.container{
+.container {
     padding-top: 50px;
     background-color: white;
     padding-bottom: 50px;
 }
 
-.form-control{
+.form-control {
     margin: 10px;
 }
 
-.form-control input{
-    max-width: 200px;
-}
+    .form-control input {
+        max-width: 200px;
+    }
 
-.form-control{
+.form-control {
     max-width: 95%;
 }
 
-div.card{
+div.card {
     margin-top: 40px;
 }
 
-div.card-body.example{
+div.card-body.example {
     display: flex;
     flex-wrap: wrap;
 }
 
 div.card-body > div.example-left,
-div.card-body > div.example-right{
+div.card-body > div.example-right {
     flex: 50%;
     padding: 10px;
 }
 
-div.card-body > .example-actions{
+div.card-body > .example-actions {
     flex: 100%;
     text-align: center;
 }
 
-div.card-body > .example-actions button{
-    margin-left: 10px;
-    margin-right: 10px;
-    width: 70px;
-}
+    div.card-body > .example-actions button {
+        margin-left: 10px;
+        margin-right: 10px;
+        width: 70px;
+    }
 
-table.matrix{
+table.matrix {
     width: 100%;
     text-align: center;
     margin-top: 20px;
     background-color: rgba(0,0,0,.025);
 }
 
-table.matrix tr:first-child{
-    font-weight: 500;
-    background-color: rgba(0,0,0,.1);
-}
+    table.matrix tr:first-child {
+        font-weight: 500;
+        background-color: rgba(0,0,0,.1);
+    }
 
-table.matrix tr td:first-child{
-    font-weight: 500;
-    padding: 5px;
-    width: 120px;
-    text-align: right;
-    background-color: rgba(0,0,0,.1);
-}
+    table.matrix tr td:first-child {
+        font-weight: 500;
+        padding: 5px;
+        width: 120px;
+        text-align: right;
+        background-color: rgba(0,0,0,.1);
+    }
 
-footer{
+footer {
     width: 100%;
     padding: 10px 15%;
-    color: white!important;
-    background-color: #343a40!important;
+    color: white !important;
+    background-color: #343a40 !important;
     text-align: center;
 }
 
-footer a{
-    color: white!important;
-}
+    footer a {
+        color: white !important;
+    }

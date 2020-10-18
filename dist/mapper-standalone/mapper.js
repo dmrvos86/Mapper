@@ -1,336 +1,347 @@
 "use strict";
-class MapAttributeValueGetResult {
-    constructor() {
-        this.parserMatched = false;
-    }
-    static ValueFoundResult(value) {
-        const result = new MapAttributeValueGetResult();
-        result.parserMatched = true;
-        result.value = value;
-        return result;
-    }
-}
-class MapAttributeValueParser {
-    constructor() {
-    }
-    getElementValueOrDataValueAttribute(mapperConfig, el) {
-        if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
-            return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
-        return el.value;
-    }
-    setElementValueOrDataValueAttribute(mapperConfig, el, valueToSet) {
-        if (mapperConfig.dataValueAttributeToUseForSet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))
-            el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
-        else
-            el.value = valueToSet;
-    }
-    parseHtmlTextAreaValue(mapperConfig, element) {
-        const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
-        return MapAttributeValueGetResult.ValueFoundResult(value);
-    }
-    parseHtmlSelectValue(mapperConfig, element) {
-        let returnValue;
-        const selectedValues = Array
-            .from(element.options)
-            .filter(x => x.selected)
-            .map(x => {
-            let value = this.getElementValueOrDataValueAttribute(mapperConfig, x);
-            if (value === null || value === undefined)
-                value = x.text;
-            return value;
-        });
-        if (element.multiple) {
-            returnValue = selectedValues;
+var MapperLib;
+(function (MapperLib) {
+    class MapAttributeValueGetResult {
+        constructor() {
+            this.parserMatched = false;
         }
-        else {
-            returnValue = selectedValues[0];
+        static ValueFoundResult(value) {
+            const result = new MapAttributeValueGetResult();
+            result.parserMatched = true;
+            result.value = value;
+            return result;
         }
-        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
     }
-    parseHtmlInputValue(mapperConfig, containerElement, element) {
-        let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element);
-        switch (element.type) {
-            case "number":
-                returnValue = returnValue * 1;
-                break;
-            case "file":
-                returnValue = element.multiple ? element.files : element.files.item(0);
-                break;
-            case "checkbox":
-            case "radio":
-                const mapAttribute = element.getAttribute("map");
-                const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
-                const elements = Array.from(containerElement.querySelectorAll(querySelector));
-                const elementsChecked = Array
-                    .from(elements)
-                    .filter(x => x.checked === true);
-                if (element.type === "radio") {
-                    if (elementsChecked.length === 1)
-                        returnValue = elementsChecked[0].value;
-                    else if (elementsChecked.length > 1)
-                        throw `For radio with mapping ${mapAttribute}, more than one selected value exists`;
-                }
-                if (element.type === "checkbox") {
-                    const haveValueAttributes = elements
-                        .filter(x => (x.hasAttribute("value") && x.getAttribute("value")) || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
-                        .length > 0;
-                    let arrayToParse = [];
-                    if (haveValueAttributes)
-                        arrayToParse = arrayToParse.concat(elementsChecked);
-                    else
-                        arrayToParse = arrayToParse.concat(elements);
-                    returnValue = arrayToParse.map(elMap => {
-                        if (haveValueAttributes) {
-                            return elMap.getAttribute(mapperConfig.dataValueAttributeToUseForGet) || elMap.value;
-                        }
-                        else {
-                            return elMap.checked;
-                        }
-                    });
-                }
-                break;
-            default:
-                break;
+    MapperLib.MapAttributeValueGetResult = MapAttributeValueGetResult;
+    class MapAttributeValueParser {
+        constructor() {
         }
-        return MapAttributeValueGetResult.ValueFoundResult(returnValue);
-    }
-    setHtmlInputValue(mapperConfig, containerElement, element, valueToSet) {
-        switch (element.type) {
-            case "checkbox":
-            case "radio":
-                const mapAttribute = element.getAttribute("map");
-                const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
-                const elements = Array.from(containerElement.querySelectorAll(querySelector));
-                if (typeof (valueToSet) === "boolean") {
-                    elements.forEach(x => x.checked = valueToSet);
-                }
-                else if (!Array.isArray(valueToSet)) {
-                    valueToSet = [valueToSet];
-                }
-                if (Array.isArray(valueToSet)) {
-                    elements.forEach((x) => {
-                        let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
-                        x.checked = valueToSet.indexOf(elementValue) > -1;
-                    });
-                }
-                break;
-            default:
-                this.setElementValueOrDataValueAttribute(mapperConfig, element, valueToSet);
-                break;
+        getElementValueOrDataValueAttribute(mapperConfig, el) {
+            if (mapperConfig.dataValueAttributeToUseForGet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                return el.getAttribute(mapperConfig.dataValueAttributeToUseForGet);
+            return el.value;
         }
-        ;
-    }
-    getElementsByMapAttribute(containerElement, mapAttribute) {
-        const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
-        return Array.from(elements);
-    }
-    getValue(mapperConfig, mapElement, containerElement) {
-        let result = new MapAttributeValueGetResult();
-        if (mapElement instanceof HTMLInputElement) {
-            result = this.parseHtmlInputValue(mapperConfig, containerElement, mapElement);
+        setElementValueOrDataValueAttribute(mapperConfig, el, valueToSet) {
+            if (mapperConfig.dataValueAttributeToUseForSet && el.hasAttribute(mapperConfig.dataValueAttributeToUseForSet))
+                el.setAttribute(mapperConfig.dataValueAttributeToUseForSet, valueToSet);
+            else
+                el.value = valueToSet;
         }
-        else if (mapElement instanceof HTMLSelectElement) {
-            result = this.parseHtmlSelectValue(mapperConfig, mapElement);
+        parseHtmlTextAreaValue(mapperConfig, element) {
+            const value = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+            return MapAttributeValueGetResult.ValueFoundResult(value);
         }
-        else if (mapElement instanceof HTMLTextAreaElement) {
-            result = this.parseHtmlTextAreaValue(mapperConfig, mapElement);
-        }
-        return result;
-    }
-    setValue(mapperConfig, mapElement, containerElement, valueToSet) {
-        if (valueToSet === null || valueToSet === undefined)
-            return false;
-        if (mapElement instanceof HTMLInputElement) {
-            this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
-        }
-        else if (mapElement instanceof HTMLSelectElement) {
-            if (!Array.isArray(valueToSet))
-                valueToSet = [valueToSet];
-            valueToSet = valueToSet.map((x) => x.toString());
-            Array.from(mapElement.options)
-                .forEach(opt => {
-                opt.selected = valueToSet.indexOf(this.getElementValueOrDataValueAttribute(mapperConfig, opt)) >= 0;
+        parseHtmlSelectValue(mapperConfig, element) {
+            let returnValue;
+            const selectedValues = Array
+                .from(element.options)
+                .filter(x => x.selected)
+                .map(x => {
+                let value = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                if (value === null || value === undefined)
+                    value = x.text;
+                return value;
             });
-        }
-        else {
-            mapElement.value = valueToSet;
-        }
-        return true;
-    }
-}
-class MapAttributeJsonParser extends MapAttributeValueParser {
-    constructor() {
-        super();
-    }
-    getValue(mapperConfig, mapElement, containerElement) {
-        const value = super.getValue(mapperConfig, mapElement, containerElement);
-        value.value = JSON.parse(value.value);
-        return value;
-    }
-    setValue(mapperConfig, mapElement, containerElement, valueToSet) {
-        const jsonValueToSet = JSON.stringify(valueToSet);
-        return super.setValue(mapperConfig, mapElement, containerElement, jsonValueToSet);
-    }
-}
-class SegmentInfo {
-    constructor(propertyName) {
-        this.propertyName = propertyName;
-        this.mapType = "PROPERTY";
-        this.isLastSegment = false;
-        this.mapAsArray = false;
-        this.matchKey = undefined;
-        this.matchValue = undefined;
-        this.matchIndex = undefined;
-    }
-    setAsArrayMap() {
-        this.mapType = "ARRAY";
-        this.mapAsArray = true;
-    }
-    setAsArraySearchByKey(key, valueToMatch) {
-        this.mapType = "ARRAY_SEARCH_BY_KEY";
-        this.matchKey = key;
-        this.matchValue = valueToMatch;
-    }
-    setAsArraySearchByIndex(matchIndex) {
-        this.mapType = "ARRAY_SEARCH_BY_INDEX";
-        this.matchIndex = matchIndex;
-    }
-    validate() {
-        const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
-            || (this.mapType === "ARRAY" && !this.isLastSegment)
-            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
-            || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
-            || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
-        if (invalidMapping)
-            throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
-    }
-}
-class MapProcedureBuilder {
-    static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
-        const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
-        if (isErrorMap)
-            throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
-        const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
-        const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
-        let propertyName = pathSegment;
-        if (propertyName.indexOf('[') > -1)
-            propertyName = propertyName.substr(0, propertyName.indexOf('['));
-        const segmentInfo = new SegmentInfo(propertyName);
-        segmentInfo.isLastSegment = isLastSegment;
-        if (isSimpleArrayMap) {
-            segmentInfo.setAsArrayMap();
-        }
-        else if (isComplexArrayMap) {
-            const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
-            const isKeyBasedMapping = isNaN(Number(bracketContent));
-            if (isKeyBasedMapping) {
-                const bracketData = bracketContent.split('=');
-                const key = bracketData[0];
-                const valueToMatch = bracketData[1];
-                segmentInfo.setAsArraySearchByKey(key, valueToMatch);
+            if (element.multiple) {
+                returnValue = selectedValues;
             }
             else {
-                segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+                returnValue = selectedValues[0];
             }
+            return MapAttributeValueGetResult.ValueFoundResult(returnValue);
         }
-        segmentInfo.validate();
-        return segmentInfo;
-    }
-    static buildMapProcedureSteps(mapProperty) {
-        const mapPath = mapProperty.split(".");
-        const steps = [];
-        mapPath.forEach((pathSegment, index) => {
-            const isLastSegment = index === (mapPath.length - 1);
-            const segmentInfo = MapProcedureBuilder.getSegmentPathInfo(mapProperty, pathSegment, isLastSegment);
-            switch (segmentInfo.mapType) {
-                case "PROPERTY":
-                    const stepData = {
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": {}
-                    };
-                    steps.push(stepData);
+        parseHtmlInputValue(mapperConfig, containerElement, element) {
+            let returnValue = this.getElementValueOrDataValueAttribute(mapperConfig, element);
+            switch (element.type) {
+                case "number":
+                    returnValue = returnValue * 1;
                     break;
-                case "ARRAY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
+                case "file":
+                    returnValue = element.multiple ? element.files : element.files.item(0);
                     break;
-                case "ARRAY_SEARCH_BY_KEY":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    const propertyValue = {};
-                    propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchKey": segmentInfo.matchKey,
-                        "matchValue": segmentInfo.matchValue,
-                        "defaultPropertyValue": propertyValue
-                    });
+                case "checkbox":
+                case "radio":
+                    const mapAttribute = element.getAttribute("map");
+                    const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
+                    const elements = Array.from(containerElement.querySelectorAll(querySelector));
+                    const elementsChecked = Array
+                        .from(elements)
+                        .filter(x => x.checked === true);
+                    if (element.type === "radio") {
+                        if (elementsChecked.length === 1)
+                            returnValue = elementsChecked[0].value;
+                        else if (elementsChecked.length > 1)
+                            throw `For radio with mapping ${mapAttribute}, more than one selected value exists`;
+                    }
+                    if (element.type === "checkbox") {
+                        const haveValueAttributes = elements
+                            .filter(x => (x.hasAttribute("value") && x.getAttribute("value")) || x.hasAttribute(mapperConfig.dataValueAttributeToUseForGet))
+                            .length > 0;
+                        let arrayToParse = [];
+                        if (haveValueAttributes)
+                            arrayToParse = arrayToParse.concat(elementsChecked);
+                        else
+                            arrayToParse = arrayToParse.concat(elements);
+                        returnValue = arrayToParse.map(elMap => {
+                            if (haveValueAttributes) {
+                                return elMap.getAttribute(mapperConfig.dataValueAttributeToUseForGet) || elMap.value;
+                            }
+                            else {
+                                return elMap.checked;
+                            }
+                        });
+                    }
                     break;
-                case "ARRAY_SEARCH_BY_INDEX":
-                    steps.push({
-                        "type": "PROPERTY_TRAVERSE",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "propertyName": segmentInfo.propertyName,
-                        "defaultPropertyValue": []
-                    });
-                    steps.push({
-                        "type": "ARRAY_ITEM",
-                        "mapAsArray": segmentInfo.mapAsArray,
-                        "isLastStep": segmentInfo.isLastSegment,
-                        "matchIndex": segmentInfo.matchIndex,
-                        "defaultPropertyValue": {}
-                    });
+                default:
                     break;
             }
-        });
-        return {
-            mapAttribute: mapProperty,
-            steps: steps
+            return MapAttributeValueGetResult.ValueFoundResult(returnValue);
+        }
+        setHtmlInputValue(mapperConfig, containerElement, element, valueToSet) {
+            switch (element.type) {
+                case "checkbox":
+                case "radio":
+                    const mapAttribute = element.getAttribute("map");
+                    const querySelector = `input[type="${element.type}"][map="${mapAttribute}"]`;
+                    const elements = Array.from(containerElement.querySelectorAll(querySelector));
+                    if (typeof (valueToSet) === "boolean") {
+                        elements.forEach(x => x.checked = valueToSet);
+                    }
+                    else if (!Array.isArray(valueToSet)) {
+                        valueToSet = [valueToSet];
+                    }
+                    if (Array.isArray(valueToSet)) {
+                        elements.forEach((x) => {
+                            let elementValue = this.getElementValueOrDataValueAttribute(mapperConfig, x);
+                            x.checked = valueToSet.indexOf(elementValue) > -1;
+                        });
+                    }
+                    break;
+                default:
+                    this.setElementValueOrDataValueAttribute(mapperConfig, element, valueToSet);
+                    break;
+            }
+            ;
+        }
+        getElementsByMapAttribute(containerElement, mapAttribute) {
+            const elements = containerElement.querySelectorAll(`[map="${mapAttribute}"]`);
+            return Array.from(elements);
+        }
+        getValue(mapperConfig, mapElement, containerElement) {
+            let result = new MapAttributeValueGetResult();
+            if (mapElement instanceof HTMLInputElement) {
+                result = this.parseHtmlInputValue(mapperConfig, containerElement, mapElement);
+            }
+            else if (mapElement instanceof HTMLSelectElement) {
+                result = this.parseHtmlSelectValue(mapperConfig, mapElement);
+            }
+            else if (mapElement instanceof HTMLTextAreaElement) {
+                result = this.parseHtmlTextAreaValue(mapperConfig, mapElement);
+            }
+            return result;
+        }
+        setValue(mapperConfig, mapElement, containerElement, valueToSet) {
+            if (valueToSet === null || valueToSet === undefined)
+                return false;
+            if (mapElement instanceof HTMLInputElement) {
+                this.setHtmlInputValue(mapperConfig, containerElement, mapElement, valueToSet);
+            }
+            else if (mapElement instanceof HTMLSelectElement) {
+                if (!Array.isArray(valueToSet))
+                    valueToSet = [valueToSet];
+                valueToSet = valueToSet.map((x) => x.toString());
+                Array.from(mapElement.options)
+                    .forEach(opt => {
+                    opt.selected = valueToSet.indexOf(this.getElementValueOrDataValueAttribute(mapperConfig, opt)) >= 0;
+                });
+            }
+            else {
+                mapElement.value = valueToSet;
+            }
+            return true;
+        }
+    }
+    MapperLib.MapAttributeValueParser = MapAttributeValueParser;
+
+    class MapAttributeJsonParser extends MapperLib.MapAttributeValueParser {
+        constructor() {
+            super();
+        }
+        getValue(mapperConfig, mapElement, containerElement) {
+            const value = super.getValue(mapperConfig, mapElement, containerElement);
+            value.value = JSON.parse(value.value);
+            return value;
+        }
+        setValue(mapperConfig, mapElement, containerElement, valueToSet) {
+            const jsonValueToSet = JSON.stringify(valueToSet);
+            return super.setValue(mapperConfig, mapElement, containerElement, jsonValueToSet);
+        }
+    }
+    MapperLib.MapAttributeJsonParser = MapAttributeJsonParser;
+
+    class SegmentInfo {
+        constructor(propertyName) {
+            this.propertyName = propertyName;
+            this.mapType = "PROPERTY";
+            this.isLastSegment = false;
+            this.mapAsArray = false;
+            this.matchKey = undefined;
+            this.matchValue = undefined;
+            this.matchIndex = undefined;
+        }
+        setAsArrayMap() {
+            this.mapType = "ARRAY";
+            this.mapAsArray = true;
+        }
+        setAsArraySearchByKey(key, valueToMatch) {
+            this.mapType = "ARRAY_SEARCH_BY_KEY";
+            this.matchKey = key;
+            this.matchValue = valueToMatch;
+        }
+        setAsArraySearchByIndex(matchIndex) {
+            this.mapType = "ARRAY_SEARCH_BY_INDEX";
+            this.matchIndex = matchIndex;
+        }
+        validate() {
+            const invalidMapping = (this.mapType === "ARRAY" && (this.matchKey || this.matchValue || this.matchIndex))
+                || (this.mapType === "ARRAY" && !this.isLastSegment)
+                || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && this.matchIndex === undefined)
+                || (this.mapType === "ARRAY_SEARCH_BY_INDEX" && (this.matchKey || this.matchValue))
+                || (this.mapType === "ARRAY_SEARCH_BY_KEY" && this.matchIndex)
+                || (this.mapType === "ARRAY_SEARCH_BY_KEY" && (!this.matchKey || !this.matchValue));
+            if (invalidMapping)
+                throw `SegmentInfo - Invalid mapping for property ${this.propertyName}!`;
+        }
+    }
+    class MapProcedureBuilder {
+        static getSegmentPathInfo(mapProperty, pathSegment, isLastSegment) {
+            const isErrorMap = !isLastSegment && pathSegment.endsWith('[]');
+            if (isErrorMap)
+                throw "Invalid mapping: " + mapProperty + ", segment: " + pathSegment;
+            const isSimpleArrayMap = isLastSegment && pathSegment.endsWith('[]');
+            const isComplexArrayMap = !isSimpleArrayMap && pathSegment.indexOf('[') > 0;
+            let propertyName = pathSegment;
+            if (propertyName.indexOf('[') > -1)
+                propertyName = propertyName.substr(0, propertyName.indexOf('['));
+            const segmentInfo = new SegmentInfo(propertyName);
+            segmentInfo.isLastSegment = isLastSegment;
+            if (isSimpleArrayMap) {
+                segmentInfo.setAsArrayMap();
+            }
+            else if (isComplexArrayMap) {
+                const bracketContent = pathSegment.substring(pathSegment.indexOf('[') + 1, pathSegment.indexOf(']'));
+                const isKeyBasedMapping = isNaN(Number(bracketContent));
+                if (isKeyBasedMapping) {
+                    const bracketData = bracketContent.split('=');
+                    const key = bracketData[0];
+                    const valueToMatch = bracketData[1];
+                    segmentInfo.setAsArraySearchByKey(key, valueToMatch);
+                }
+                else {
+                    segmentInfo.setAsArraySearchByIndex(Number(bracketContent));
+                }
+            }
+            segmentInfo.validate();
+            return segmentInfo;
+        }
+        static buildMapProcedureSteps(mapProperty) {
+            const mapPath = mapProperty.split(".");
+            const steps = [];
+            mapPath.forEach((pathSegment, index) => {
+                const isLastSegment = index === (mapPath.length - 1);
+                const segmentInfo = MapProcedureBuilder.getSegmentPathInfo(mapProperty, pathSegment, isLastSegment);
+                switch (segmentInfo.mapType) {
+                    case "PROPERTY":
+                        const stepData = {
+                            "type": "PROPERTY_TRAVERSE",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "propertyName": segmentInfo.propertyName,
+                            "defaultPropertyValue": {}
+                        };
+                        steps.push(stepData);
+                        break;
+                    case "ARRAY":
+                        steps.push({
+                            "type": "PROPERTY_TRAVERSE",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "propertyName": segmentInfo.propertyName,
+                            "defaultPropertyValue": []
+                        });
+                        break;
+                    case "ARRAY_SEARCH_BY_KEY":
+                        steps.push({
+                            "type": "PROPERTY_TRAVERSE",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "propertyName": segmentInfo.propertyName,
+                            "defaultPropertyValue": []
+                        });
+                        const propertyValue = {};
+                        propertyValue[segmentInfo.matchKey] = segmentInfo.matchValue;
+                        steps.push({
+                            "type": "ARRAY_ITEM",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "matchKey": segmentInfo.matchKey,
+                            "matchValue": segmentInfo.matchValue,
+                            "defaultPropertyValue": propertyValue
+                        });
+                        break;
+                    case "ARRAY_SEARCH_BY_INDEX":
+                        steps.push({
+                            "type": "PROPERTY_TRAVERSE",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "propertyName": segmentInfo.propertyName,
+                            "defaultPropertyValue": []
+                        });
+                        steps.push({
+                            "type": "ARRAY_ITEM",
+                            "mapAsArray": segmentInfo.mapAsArray,
+                            "isLastStep": segmentInfo.isLastSegment,
+                            "matchIndex": segmentInfo.matchIndex,
+                            "defaultPropertyValue": {}
+                        });
+                        break;
+                }
+            });
+            return {
+                mapAttribute: mapProperty,
+                steps: steps
+            };
+        }
+    }
+    MapperLib.MapProcedureBuilder = MapProcedureBuilder;
+
+    function jsonToFormData(jsonObject) {
+        const formData = new FormData();
+        const appendToFormData = (json, prefixKey) => {
+            for (let jsonKey of Object.keys(json)) {
+                const jsonProperty = json[jsonKey];
+                if (jsonProperty instanceof File) {
+                    formData.append(jsonKey, jsonProperty);
+                }
+                else if (jsonProperty instanceof Object) {
+                    let newPrefix = `[${jsonKey}]`;
+                    if (prefixKey)
+                        newPrefix = `${prefixKey}${newPrefix}`;
+                    appendToFormData(jsonProperty, newPrefix);
+                }
+                else {
+                    let key = jsonKey;
+                    if (prefixKey)
+                        key = `${prefixKey}.${jsonKey}`;
+                    formData.append(key, jsonProperty);
+                }
+            }
         };
+        appendToFormData(jsonObject);
+        return formData;
     }
-}
-function jsonToFormData(jsonObject) {
-    const formData = new FormData();
-    const appendToFormData = (json, prefixKey) => {
-        for (let jsonKey of Object.keys(json)) {
-            const jsonProperty = json[jsonKey];
-            if (jsonProperty instanceof File) {
-                formData.append(jsonKey, jsonProperty);
-            }
-            else if (jsonProperty instanceof Object) {
-                let newPrefix = `[${jsonKey}]`;
-                if (prefixKey)
-                    newPrefix = `${prefixKey}${newPrefix}`;
-                appendToFormData(jsonProperty, newPrefix);
-            }
-            else {
-                let key = jsonKey;
-                if (prefixKey)
-                    key = `${prefixKey}.${jsonKey}`;
-                formData.append(key, jsonProperty);
-            }
-        }
-    };
-    appendToFormData(jsonObject);
-    return formData;
-}
+    MapperLib.jsonToFormData = jsonToFormData;
+})(MapperLib || (MapperLib = {}));
 class Mapper {
     constructor(containerElement, configuration) {
         this.containerElement = containerElement;
@@ -340,9 +351,6 @@ class Mapper {
             "triggerChangeOnSet": true
         };
         Object.assign(this.configuration, configuration || {});
-    }
-    static AddMapper(name, valueParser) {
-        Mapper.elementValueParsers[name] = valueParser;
     }
     getFirstElementByMapAttribute(containerElement, mapAttribute) {
         return containerElement.querySelector(`[map="${mapAttribute}"]`);
@@ -380,39 +388,6 @@ class Mapper {
                 element.setAttribute("map", newMap);
             });
         });
-    }
-    static initializeMapperByElementsName(containerElement) {
-        const elementsToCheck = Array
-            .from(containerElement.querySelectorAll("input,select,textarea"))
-            .filter(element => {
-            const attributes = Array.from(element.attributes);
-            const mapAttributeCount = attributes
-                .filter(attribute => attribute.name.startsWith("map"))
-                .length;
-            const hasMapAttribute = mapAttributeCount > 0;
-            const hasNameAttribute = attributes
-                .filter(x => x.name === "name")
-                .filter(x => x.value.length > 0)
-                .length > 0;
-            return !hasMapAttribute && hasNameAttribute;
-        });
-        elementsToCheck.forEach((element) => {
-            const elementName = element.getAttribute("name");
-            let mapName = elementName[0].toLowerCase() + elementName.slice(1);
-            const sameNameCount = elementsToCheck
-                .filter(el => el.getAttribute("name") === elementName)
-                .length;
-            if (sameNameCount > 1)
-                mapName += "[]";
-            element.setAttribute("map", mapName);
-        });
-        return new Mapper(containerElement);
-    }
-    static getData(containerElement) {
-        return new Mapper(containerElement).getData();
-    }
-    static getFormData(containerElement) {
-        return new Mapper(containerElement).getFormData();
     }
     getData() {
         this.preProcess();
@@ -467,10 +442,7 @@ class Mapper {
     }
     getFormData() {
         const data = this.getData();
-        return jsonToFormData(data);
-    }
-    static setData(containerElement, dataToMap) {
-        new Mapper(containerElement).setData(dataToMap);
+        return MapperLib.jsonToFormData(data);
     }
     setData(dataToMap) {
         if (!(dataToMap instanceof Object))
@@ -532,11 +504,53 @@ class Mapper {
             .map(x => x.getAttribute("map"));
         const uniqueMapAttributes = [...new Set(allMapAttributes)];
         return uniqueMapAttributes.map(x => {
-            return MapProcedureBuilder.buildMapProcedureSteps(x);
+            return MapperLib.MapProcedureBuilder.buildMapProcedureSteps(x);
         });
+    }
+    static initializeMapperByElementsName(containerElement) {
+        const elementsToCheck = Array
+            .from(containerElement.querySelectorAll("input,select,textarea"))
+            .filter(element => {
+            const attributes = Array.from(element.attributes);
+            const mapAttributeCount = attributes
+                .filter(attribute => attribute.name.startsWith("map"))
+                .length;
+            const hasMapAttribute = mapAttributeCount > 0;
+            const hasNameAttribute = attributes
+                .filter(x => x.name === "name")
+                .filter(x => x.value.length > 0)
+                .length > 0;
+            return !hasMapAttribute && hasNameAttribute;
+        });
+        elementsToCheck.forEach((element) => {
+            const elementName = element.getAttribute("name");
+            let mapName = elementName[0].toLowerCase() + elementName.slice(1);
+            const sameNameCount = elementsToCheck
+                .filter(el => el.getAttribute("name") === elementName)
+                .length;
+            if (sameNameCount > 1)
+                mapName += "[]";
+            element.setAttribute("map", mapName);
+        });
+        return new Mapper(containerElement);
+    }
+    static getData(containerElement) {
+        return new Mapper(containerElement).getData();
+    }
+    static getFormData(containerElement) {
+        return new Mapper(containerElement).getFormData();
+    }
+    static setData(containerElement, dataToMap) {
+        new Mapper(containerElement).setData(dataToMap);
+    }
+    static AddMapper(name, valueParser) {
+        Mapper.elementValueParsers[name] = valueParser;
     }
 }
 Mapper.elementValueParsers = {
-    "default": new MapAttributeValueParser(),
-    "json": new MapAttributeJsonParser()
+    "default": new MapperLib.MapAttributeValueParser(),
+    "json": new MapperLib.MapAttributeJsonParser()
 };
+
+
+
