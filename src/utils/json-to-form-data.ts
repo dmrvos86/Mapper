@@ -22,7 +22,7 @@ namespace MapperLib {
                     if (prefixKey)
                         key = `${prefixKey}.${jsonKey}`
 
-                    formData.append(key, jsonProperty);
+                    formData.append(key, jsonProperty ?? "");
                 }
             }
         }

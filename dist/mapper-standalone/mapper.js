@@ -333,7 +333,7 @@ var MapperLib;
                     let key = jsonKey;
                     if (prefixKey)
                         key = `${prefixKey}.${jsonKey}`;
-                    formData.append(key, jsonProperty);
+                    formData.append(key, jsonProperty !== null && jsonProperty !== void 0 ? jsonProperty : "");
                 }
             }
         };
@@ -551,6 +551,4 @@ Mapper.elementValueParsers = {
     "default": new MapperLib.MapAttributeValueParser(),
     "json": new MapperLib.MapAttributeJsonParser()
 };
-
-
 
