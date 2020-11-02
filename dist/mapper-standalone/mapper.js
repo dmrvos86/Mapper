@@ -317,24 +317,23 @@ var MapperLib;
 
     function jsonToFormData(jsonObject) {
         const formData = new FormData();
-        const appendToFormData = (json, prefixKey) => {
-            for (let jsonKey of Object.keys(json)) {
-                const jsonProperty = json[jsonKey];
-                if (jsonProperty instanceof File) {
-                    formData.append(jsonKey, jsonProperty);
-                }
-                else if (jsonProperty instanceof Object) {
+        const appendToFormData = (element, prefixKey) => {
+            if (element instanceof File) {
+                formData.append(prefixKey, element);
+            }
+            else if (Array.isArray(element)) {
+                element.forEach((x, i) => appendToFormData(x, `${prefixKey}[${i}]`));
+            }
+            else if (element instanceof Object) {
+                for (let jsonKey of Object.keys(element)) {
                     let newPrefix = `[${jsonKey}]`;
                     if (prefixKey)
                         newPrefix = `${prefixKey}${newPrefix}`;
-                    appendToFormData(jsonProperty, newPrefix);
+                    appendToFormData(element[jsonKey], newPrefix);
                 }
-                else {
-                    let key = jsonKey;
-                    if (prefixKey)
-                        key = `${prefixKey}.${jsonKey}`;
-                    formData.append(key, jsonProperty !== null && jsonProperty !== void 0 ? jsonProperty : "");
-                }
+            }
+            else {
+                formData.append(prefixKey, element);
             }
         };
         appendToFormData(jsonObject);
