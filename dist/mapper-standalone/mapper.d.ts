@@ -1,11 +1,14 @@
 declare namespace MapperLib {
     interface MapperConfiguration {
-        "dataValueAttributeToUseForGet": string;
-        "dataValueAttributeToUseForSet": string;
-        "triggerChangeOnSet": boolean;
+        dataValueAttributeToUseForGet: string;
+        dataValueAttributeToUseForSet: string;
+        triggerChangeOnSet: boolean;
     }
 }
 declare namespace MapperLib {
+    interface ParserSettings {
+        arrayMap?: boolean;
+    }
     class MapAttributeValueGetResult {
         parserMatched: boolean;
         value: any;
@@ -27,6 +30,7 @@ declare namespace MapperLib {
 }
 declare namespace MapperLib {
     class MapAttributeJsonParser extends MapAttributeValueParser {
+        static JsonParserSettings: ParserSettings;
         constructor();
         getValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement): MapAttributeValueGetResult;
         setValue(mapperConfig: MapperConfiguration, mapElement: HTMLElement, containerElement: HTMLElement, valueToSet: any): boolean;
@@ -35,22 +39,22 @@ declare namespace MapperLib {
 declare namespace MapperLib {
     type MapStepTypes = "PROPERTY_TRAVERSE" | "ARRAY_ITEM";
     export interface MapStep {
-        "type": MapStepTypes;
-        "isLastStep": boolean;
-        "mapAsArray": boolean;
-        "defaultPropertyValue"?: [] | {};
-        "propertyName"?: string;
-        "matchKey"?: string;
-        "matchValue"?: string;
-        "matchIndex"?: number;
+        type: MapStepTypes;
+        isLastStep: boolean;
+        mapAsArray: boolean;
+        defaultPropertyValue?: [] | {};
+        propertyName?: string;
+        matchKey?: string;
+        matchValue?: string;
+        matchIndex?: number;
     }
     export interface MapAttributeSteps {
-        "mapAttribute": string;
-        "steps": MapStep[];
+        mapAttribute: string;
+        steps: MapStep[];
     }
     export class MapProcedureBuilder {
         private static getSegmentPathInfo;
-        static buildMapProcedureSteps(mapProperty: string): MapAttributeSteps;
+        static buildMapProcedureSteps(mapProperty: string, settings: ParserSettings): MapAttributeSteps;
     }
     export {};
 }
@@ -61,6 +65,9 @@ declare class Mapper {
     private containerElement;
     static elementValueParsers: {
         [key: string]: MapperLib.MapAttributeValueParser;
+    };
+    static elementValueParsersSettings: {
+        [key: string]: MapperLib.ParserSettings;
     };
     constructor(containerElement: HTMLElement, configuration?: MapperLib.MapperConfiguration);
     configuration: MapperLib.MapperConfiguration;
